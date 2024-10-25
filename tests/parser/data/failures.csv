@@ -136,7 +136,6 @@ WHERE SUBQUERY1_t1.col_varchar_10_key <= table1.col_varchar_10_key
 "
 disable_result_log
 enable_result_log
-"EXPLAIN ((SELECT a FROM t ORDER BY 1 LIMIT 3) ORDER BY -a LIMIT 2) ORDER BY a"
 "EXPLAIN
 DELETE LOW_PRIORITY QUICK IGNORE
 FROM t1 PARTITION (p1)
@@ -391,36 +390,6 @@ ANY (SELECT GROUPING(a) FROM t1 GROUP BY a WITH ROLLUP)"
 select COUNT(*)
 FROM v1 WHERE f1 IN
 (SELECT f1 FROM t2 WHERE f1 = ANY (SELECT f1 FROM v1))"
-"((SELECT 1 FROM t1 ORDER BY 1) ORDER BY 1) ORDER BY 1"
-"((SELECT 1 FROM t1 LIMIT 1) LIMIT 1) LIMIT 1"
-"( (SELECT 1 UNION SELECT 1 ) UNION SELECT 1 ) UNION SELECT 1"
-"((SELECT 1 FROM t1)  UNION   SELECT 2 FROM t1)"
-"(((SELECT 1 FROM t1)) UNION   SELECT 2 FROM t1)"
-"((((SELECT 1 FROM t1)) UNION   SELECT 2 FROM t1))"
-"((SELECT 1 FROM t1)  UNION  (SELECT 2 FROM t1))"
-"(((SELECT 1 FROM t1)  UNION  (SELECT 2 FROM t1)))"
-"((((SELECT 1 FROM t1)) UNION  (SELECT 2 FROM t1)))"
-"(((SELECT 1 FROM t1)  UNION ((SELECT 2 FROM t1))))"
-"((((SELECT 1 FROM t1)) UNION ((SELECT 2 FROM t1))))"
-"((SELECT 1) ORDER BY 1)"
-"((SELECT 1) LIMIT 1)"
-"SELECT * FROM   ((SELECT 1 FROM t1)  UNION   SELECT 2 FROM t1) dt"
-"SELECT * FROM  (((SELECT 1 FROM t1)) UNION   SELECT 2 FROM t1) dt"
-"SELECT * FROM ((((SELECT 1 FROM t1)) UNION   SELECT 2 FROM t1)) dt"
-"SELECT * FROM   ((SELECT 1 FROM t1)  UNION  (SELECT 2 FROM t1)) dt"
-"SELECT * FROM  (((SELECT 1 FROM t1)  UNION  (SELECT 2 FROM t1))) dt"
-"SELECT * FROM ((((SELECT 1 FROM t1)) UNION  (SELECT 2 FROM t1))) dt"
-"SELECT * FROM  (((SELECT 1 FROM t1)  UNION ((SELECT 2 FROM t1)))) dt"
-"SELECT * FROM ((((SELECT 1 FROM t1)) UNION ((SELECT 2 FROM t1)))) dt"
-"SELECT 1 FROM ((SELECT 2) ORDER BY 1) AS res"
-"SELECT 1 FROM ((SELECT 2) LIMIT 1) AS res"
-"((SELECT 1 UNION SELECT 1) UNION SELECT 1)"
-"SELECT * FROM ((SELECT 1 UNION SELECT 1) UNION SELECT 1) a"
-"((SELECT 1) UNION (SELECT 1 INTO @v FROM t1))"
-"((SELECT 1) UNION (SELECT 2 INTO OUTFILE 'parser.test.file5'))"
-"EXPLAIN ((SELECT * FROM t3 ORDER BY a LIMIT 3)
-ORDER BY b DESC LIMIT 2)
-ORDER BY c LIMIT 1"
 "SELECT 'a%' LIKE 'a!%' ESCAPE '!', 'a%' LIKE 'a!' || '%' ESCAPE '!'"
 "SELECT 'a%' NOT LIKE 'a!%' ESCAPE '!', 'a%' NOT LIKE 'a!' || '%' ESCAPE '!'"
 "SELECT 'a%' LIKE 'a!%' ESCAPE '$', 'a%' LIKE 'a!' || '%' ESCAPE '$'"
@@ -433,7 +402,6 @@ ORDER BY c LIMIT 1"
 "(SELECT 2 AS c) ORDER BY c INTO @var"
 "(SELECT 3 AS c) ORDER BY c LIMIT 1 INTO @var"
 "SELECT cast( NULL AT TIME ZONE 'UTC' AS DATETIME )"
-"((SELECT * FROM t1 ORDER BY i) ORDER BY i) ORDER BY i"
 "DELETE FROM t1 PARTITION(subp1) WHERE b = ""REPLACEd by REPLACE"""
 "DELETE FROM t1 PARTITION (pNeg) WHERE a = -1"
 "DELETE FROM t1 PARTITION (subp1) WHERE b like '%subp1%'"
@@ -469,14 +437,6 @@ partition p2 values less than (732664)  -- 2005-12-19
 "query_attributes 'a' ""b c"""
 "query_attributes '' 'a'"
 reset_connection
-"WITH RECURSIVE cte AS
-( ( (SELECT 1 AS n UNION SELECT 2) EXCEPT SELECT 2)  UNION ALL
-SELECT n+1  FROM cte WHERE n<100)
-SELECT n FROM cte LIMIT 10"
-"CREATE TABLE t1 AS ((VALUES ROW (1, 1), ROW (2,2) ORDER BY column_0 LIMIT 2)
-ORDER BY column_1 LIMIT 1)"
-"CREATE TABLE t2 AS ((VALUES ROW (null, null), ROW (2,2)
-ORDER BY column_0 LIMIT 2) ORDER BY column_1 LIMIT 1)"
 "SHOW GRANTS FOR u2@localhost USING r1"
 "GRANT CREATE USER, EVENT, TRIGGER, CREATE TABLESPACE, CREATE ROLE, DROP ROLE ON *.* TO u2"
 "CHANGE REPLICATION SOURCE TO SOURCE_PASSWORD='azundris3'"
@@ -843,48 +803,11 @@ WHERE t1.i <= SOME ( SELECT 8 UNION  SELECT 3 ) ) )"
 "SELECT JSON_VALUE('{""data"": ""2019-01-01 11:11::11""}', '$.data' RETURNING DATETIME) AS v"
 "SELECT JSON_VALUE('{""data"": ""2019-01/01""}', '$.data' RETURNING DATE) AS v"
 "SELECT JSON_VALUE('{""data"": ""10:11:12.098700    ""}', '$.data' RETURNING TIME) AS v"
-"create trigger t1_whoupdated before update on t1 for each row
-begin
-declare user varchar(32);
-declare i int;
-select user() into user;
-set NEW.username = user;
-select count(*) from ((select 1) union (select 2)) as d1 into i;
-end"
 "load data infile '../../std_data/words.dat' into table t1 (a) set b:= f1()"
 "SELECT 10,10.0,10.,.1e+2,100.0e-1"
 "create table t1 (c nchar varchar(10))"
 "create table t1 (c national character varying(10))"
 "create table t1 (c nchar varying(10))"
-"select count(*) from (
-(select                      a,b from t1 limit 2)  union all (select a,b from t2 order by a)) q"
-"SELECT COUNT(*) FROM (
-(SELECT                     * FROM t1) UNION all (SELECT * FROM t2)) q"
-"SELECT COUNT(*) FROM (
-(SELECT                     * FROM t1 LIMIT 1) UNION all (SELECT * FROM t2)) q"
-"SELECT COUNT(*) FROM (
-(SELECT                     * FROM t1) UNION all (SELECT * FROM t2 LIMIT 1)) q"
-"SELECT COUNT(*) FROM (
-(SELECT                     * FROM t1 LIMIT 1) UNION SELECT * FROM t2) q"
-"SELECT COUNT(*) FROM (
-(SELECT                     * FROM t1 LIMIT 1) UNION all SELECT * FROM t2) q"
-"SELECT COUNT(*) FROM (
-(SELECT                     * FROM t1 LIMIT 100) UNION SELECT * FROM t2) q"
-"SELECT COUNT(*) FROM (
-(SELECT                     * FROM t1 limit 2,2) UNION SELECT * FROM t2) q"
-"select * from ((select * from t1 limit 1) union (select * from t1 limit 1)) a"
-"select * from ((select * from t1 limit 1) union (select * from t1 limit 1) union (select * from t1 limit 1)) a"
-"select * from ((((select * from t1))) union (select * from t1) union (select * from t1)) a"
-"select * from ((select * from t1) union (((select * from t1))) union (select * from t1)) a"
-"SELECT c1, c2 FROM (
-(
-(SELECT c1, c2 FROM t1)
-UNION
-(SELECT c1, c2 FROM t2)
-)
-ORDER BY c2 DESC, c1 ASC LIMIT 1
-) AS res"
-"((SELECT SQL_CALC_FOUND_ROWS * FROM r ORDER BY a LIMIT 5) ORDER BY -a LIMIT 4) ORDER BY a LIMIT 3"
 "CREATE USER foo2@localhost IDENTIFIED BY 'foo' COMMENT 'xxx'"
 "CREATE USER foo3 PASSWORD EXPIRE DEFAULT COMMENT 'abc'"
 "CREATE USER foo4 ACCOUNT LOCK ATTRIBUTE '{""stuff"":""ffuts""}'"

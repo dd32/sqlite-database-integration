@@ -1122,11 +1122,21 @@ queryTerm:
 		(queryPrimary | queryExpressionParens) ({serverVersion >= 80031}? INTERSECT_SYMBOL setOperationOption? (queryPrimary | queryExpressionParens))*
 ;
 
-queryExpressionParens:
+/*queryExpressionParens:
     OPEN_PAR_SYMBOL (
         queryExpressionParens
         | queryExpression lockingClauseList?
     ) CLOSE_PAR_SYMBOL
+;*/
+
+/*
+ * @FIX:
+ * Rewrite "queryExpressionParens" to keep only "queryExpression" within.
+ * This avoids conflict between "queryExpressionParens" and "queryExpression"
+ * (which already contains "queryExpressionParens" as a subrule).
+ */
+queryExpressionParens:
+    OPEN_PAR_SYMBOL queryExpression lockingClauseList? CLOSE_PAR_SYMBOL
 ;
 
 queryPrimary:

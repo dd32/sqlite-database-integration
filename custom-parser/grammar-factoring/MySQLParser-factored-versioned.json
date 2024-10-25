@@ -7371,16 +7371,6 @@
         ]
     },
     {
-        "name": "queryExpressionParens",
-        "bnf": [
-            [
-                "OPEN_PAR_SYMBOL",
-                "%queryExpressionParens01",
-                "CLOSE_PAR_SYMBOL"
-            ]
-        ]
-    },
-    {
         "name": "lockingClauseList_zero_or_one",
         "bnf": [
             [
@@ -7392,14 +7382,13 @@
         ]
     },
     {
-        "name": "%queryExpressionParens01",
+        "name": "queryExpressionParens",
         "bnf": [
             [
-                "queryExpressionParens"
-            ],
-            [
+                "OPEN_PAR_SYMBOL",
                 "queryExpression",
-                "lockingClauseList_zero_or_one"
+                "lockingClauseList_zero_or_one",
+                "CLOSE_PAR_SYMBOL"
             ]
         ]
     },
