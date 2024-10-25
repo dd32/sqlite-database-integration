@@ -3629,10 +3629,12 @@ dataType: // type in sql_yacc.yy
     | type = (FLOAT_SYMBOL | DECIMAL_SYMBOL | NUMERIC_SYMBOL | FIXED_SYMBOL) floatOptions? fieldOptions?
     | type = BIT_SYMBOL fieldLength?
     | type = (BOOL_SYMBOL | BOOLEAN_SYMBOL)
+    /* @FIX: Moved "CHAR_SYMBOL VARYING_SYMBOL" before "CHAR_SYMBOL ..." to solve conflict. */
+    | (type = CHAR_SYMBOL VARYING_SYMBOL | type = VARCHAR_SYMBOL) fieldLength charsetWithOptBinary?
     | type = CHAR_SYMBOL fieldLength? charsetWithOptBinary?
     | nchar fieldLength? BINARY_SYMBOL?
     | type = BINARY_SYMBOL fieldLength?
-    | (type = CHAR_SYMBOL VARYING_SYMBOL | type = VARCHAR_SYMBOL) fieldLength charsetWithOptBinary?
+    /*| (type = CHAR_SYMBOL VARYING_SYMBOL | type = VARCHAR_SYMBOL) fieldLength charsetWithOptBinary?*/
     | (
         type = NATIONAL_SYMBOL VARCHAR_SYMBOL
         | type = NVARCHAR_SYMBOL
