@@ -2679,7 +2679,8 @@ expr: %expr_simple %expr_rr*;
 
 /*
  * @FIX:
- * Factor left recursion.
+ * 1. Factor left recursion.
+ * 2. Move "compOp (ALL_SYMBOL | ANY_SYMBOL)" before "compOp predicate" to avoid conflicts.
  */
 boolPri:
     predicate %boolPri_rr*
@@ -2687,8 +2688,8 @@ boolPri:
 
 %boolPri_rr:
     IS_SYMBOL notRule? NULL_SYMBOL              # primaryExprIsNull
-    | compOp predicate                          # primaryExprCompare
     | compOp (ALL_SYMBOL | ANY_SYMBOL) subquery # primaryExprAllAny
+    | compOp predicate                          # primaryExprCompare
 ;
 
 compOp:

@@ -5,7 +5,6 @@ SOURCE_PASSWORD= 'plug_user',
 SOURCE_RETRY_COUNT= 0"
 disable_query_log
 enable_query_log
-"SELECT 1 FROM t1 WHERE a = ANY (SELECT a FROM t2)"
 send
 REAP
 "SELECT CONVERT(TIMESTAMP ""2004-01-22 21:45:33"" USING latin1)"
@@ -120,20 +119,7 @@ SELECT hex(a), hex(lower(a)), hex(upper(a)) FROM t1 ORDER BY binary(a);
 DROP TABLE t1;
 
 SELECT QUOTE('\')"
-"CREATE VIEW v1 AS SELECT 1 from t1
-WHERE t1.b <=> (SELECT a FROM t1 WHERE a < SOME(SELECT '1'))"
 "FLUSH TABLES mysql.events"
-"SELECT  table1.col_date_key AS field1
-FROM
-C AS table1
-WHERE
-(table1.col_int_key <=ANY
-( SELECT SUBQUERY1_t1.col_int_key
-FROM viewC AS SUBQUERY1_t1
-WHERE SUBQUERY1_t1.col_varchar_10_key <= table1.col_varchar_10_key
-)
-)
-"
 disable_result_log
 enable_result_log
 "EXPLAIN
@@ -142,10 +128,6 @@ FROM t1 PARTITION (p1)
 WHERE c1 > 0
 ORDER BY c2
 LIMIT 10"
-"EXPLAIN FORMAT=TREE SELECT * FROM ( SELECT * FROM t1 LIMIT 2 OFFSET 1 ) AS alias1
-WHERE f1 <= ANY ( SELECT f1 FROM t1 ) ORDER BY f1"
-"EXPLAIN FORMAT=tree SELECT a FROM t1 WHERE a = ANY ( SELECT a FROM t1 WHERE b = 2 )"
-"EXPLAIN FORMAT=tree SELECT a FROM t1 WHERE a = ANY ( SELECT MAX(a) FROM t1 WHERE b = 2 )"
 echo
 "FLUSH LOCAL TABLES test.t1, test.t2 for ExPoRt"
 "FLUSH TABLE db1.t1 FOR EXPORT"
@@ -163,12 +145,6 @@ foreign key (a,b) references t3 (c,d) on update set null) engine=myisam"
 "SELECT cast(TIMESTAMP'2019-10-10 10:11:12' AT TIME ZONE '+00:00' AS DATETIME)"
 "SELECT cast(TIMESTAMP'2019-10-10 10:11:12+00:00' AT TIME ZONE '+00:00' AS DATETIME)"
 "SELECT cast( a AT TIME ZONE '+00:00' AS DATETIME ) FROM t1"
-"UPDATE IGNORE e1 AS outr1, b1 AS outr2 SET outr1.col_date =
-JSON_SET(outr1.col_date, CONCAT('$','[',1,']','.','cdate'), '2007-07-12')
-WHERE outr1.pk <= ANY ( SELECT DISTINCT innr1.col_int_key AS y FROM bb4
-AS innr2 LEFT JOIN bb4 AS innr1 ON (innr2.col_int_key <> innr1.col_int_key)
-WHERE innr1.col_int_key= 4)"
-"select 1 from t1 where 1 < some (select cast(a as datetime) from t1)"
 "select hex(weight_string('aa' as binary(3)))"
 "SELECT HEX(WEIGHT_STRING('ab' AS BINARY(1000000)))"
 "CREATE VIEW v5 AS SELECT WEIGHT_STRING(a AS BINARY(2)) AS b FROM t1"
@@ -286,30 +262,11 @@ USE INDEX FOR JOIN (i2,i2)"
 (SELECT a FROM t1 USE INDEX (i2) IGNORE INDEX (i2))"
 "EXPLAIN SELECT 1 FROM t2 WHERE a IN
 (SELECT a FROM t1 USE INDEX (i2) IGNORE INDEX (i2))"
-"SELECT EMPNUM, GRADE*1000
-FROM HU.STAFF WHERE GRADE * 1000 >
-ANY (SELECT SUM(BUDGET) FROM HU.PROJ
-GROUP BY CITY, PTYPE
-HAVING HU.PROJ.CITY = HU.STAFF.CITY)"
 "GRANT some_user_name@host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890 TO root@localhost"
 "GRANT u1@localhost TO some_user_name@host_1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890abcdefghij1234567890"
 "CREATE TABLE t1 (f1 INTEGER, b INTEGER AS ((1)) INVISIBLE, KEY k1(b))"
 enable_info
 disable_info
-"SELECT *
-FROM t1
-NATURAL JOIN (
-SELECT t2.*
-FROM t1 AS t2 JOIN t1 AS t3 ON t3.c1 = t2.c1
-WHERE t2.c3 <> ANY (SELECT c3 FROM t1)
-) AS d1"
-"SELECT MIN(t3.f1)
-FROM (t2 JOIN (t3 JOIN (SELECT t1.*
-FROM t1
-WHERE t1.f2 < t1.f2) AS dt
-ON (dt.f1 = t3.f1))
-ON (dt.f2 = t3.f2))
-WHERE (dt.f2 <> ANY (SELECT t1.f1 FROM t1 WHERE t1.f2 = dt.f2))"
 disable_reconnect
 enable_reconnect
 "SELECT 1 FROM DUAL LIMIT 1 FOR UPDATE INTO @var"
@@ -343,12 +300,6 @@ f3 INT AS (f1 + 10), f4 INT AS (f2 + 10) INVISIBLE)"
 PRIMARY KEY (`pk`),
 KEY `functional_index` ((radians(`c1`))) USING BTREE COMMENT 'you''re'
 ) ENGINE=InnoDB DEFAULT CHARSET=euckr"
-"SELECT 1 WHERE 1 =
-ANY (SELECT GROUPING(a) FROM t1 GROUP BY a WITH ROLLUP)"
-"create procedure p1()
-select COUNT(*)
-FROM v1 WHERE f1 IN
-(SELECT f1 FROM t2 WHERE f1 = ANY (SELECT f1 FROM v1))"
 "SELECT 'a%' LIKE 'a!%' ESCAPE '!', 'a%' LIKE 'a!' || '%' ESCAPE '!'"
 "SELECT 'a%' NOT LIKE 'a!%' ESCAPE '!', 'a%' NOT LIKE 'a!' || '%' ESCAPE '!'"
 "SELECT 'a%' LIKE 'a!%' ESCAPE '$', 'a%' LIKE 'a!' || '%' ESCAPE '$'"
@@ -736,25 +687,7 @@ INSERT INTO t2 SELECT * FROM t1;
 END"
 "ALTER INSTANCE RELOAD TLS"
 "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR"
-"SELECT 1 FROM t1 AS table2 LEFT JOIN (SELECT 'c') AS table3(f1)
-ON table3.f1 = table2.f1 WHERE table2.f1
-IN (SELECT 1 FROM (SELECT 1314830897) AS t1(pk)
-WHERE t1.pk <= ANY(SELECT 5)) AND FALSE"
-"EXPLAIN FORMAT=tree
-SELECT /*+ JOIN_ORDER(t3,t2,t1) */ * FROM t1
-WHERE t1.col1 = ANY (
-SELECT t1.col1 + t2.col2
-FROM t2 JOIN t3 ON t2.col2 = t3.col2 AND t2.col1 =  t3.col1
-WHERE t2.col2 BETWEEN 2 AND 9
-)"
-"SELECT t2.i FROM t2
-WHERE ( false ) AND
-( t2.i  IN ( SELECT t1.i FROM t1
-WHERE t1.i <= SOME ( SELECT 8 UNION  SELECT 3 ) ) )"
-"SELECT SUM(pk) FROM t1 WHERE ( pk >= ANY ( SELECT MAX(1) FROM DUAL) )"
 "FLUSH TABLE schema1.t1"
-"SELECT * FROM t0 WHERE a <ANY (VALUES ROW(1))"
-"SELECT * FROM t0 WHERE a <ANY (VALUES ROW(1), ROW(2))"
 "CREATE TABLESPACE ts1 ENGINE_ATTRIBUTE=''"
 "CREATE TABLESPACE ts2 ENGINE_ATTRIBUTE='{""c"": ""v""}'"
 "ALTER TABLESPACE ts1 ENGINE_ATTRIBUTE='{""foo"": ""bar""}'"
@@ -775,13 +708,6 @@ WHERE t1.i <= SOME ( SELECT 8 UNION  SELECT 3 ) ) )"
 "CREATE USER u1@localhost IDENTIFIED BY 'foo',u2@localhost IDENTIFIED BY 'foo' COMMENT ""Works with partial restrictions"""
 "create table table_28127_a(0b02 int)"
 "create table table_28127_b(0b2 int)"
-"CREATE VIEW v1 AS SELECT 1 FROM t1 WHERE
-ROW(1,1) >= ROW(1, (SELECT 1 FROM t1 WHERE  f1 >= ANY ( SELECT '1' )))"
-"CREATE VIEW v1 AS SELECT 1 FROM t1 GROUP BY
-SUBSTRING(1 FROM (SELECT 3 FROM t1 WHERE a >= ANY(SELECT 1)))"
-"SELECT * FROM t WHERE a = SOME(SELECT ROW_NUMBER() OVER () + 1 FROM t)"
-"SELECT * FROM t WHERE a = ANY(SELECT ROW_NUMBER() OVER () + 1 FROM t)"
-"SELECT * FROM t WHERE a >= SOME(SELECT ROW_NUMBER() OVER () + 1 FROM t)"
 "CREATE PROCEDURE p2(n INT) DO LEAD(1, n) OVER()"
 "CREATE PROCEDURE p3(n INT) DO LAG(1, n) OVER()"
 "DO LAG(1, @v) OVER()"

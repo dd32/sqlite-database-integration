@@ -18293,17 +18293,17 @@
             ],
             [
                 "compOp",
-                "predicate"
+                "%%boolPri_rr11",
+                "subquery"
             ],
             [
                 "compOp",
-                "%%boolPri_rr21",
-                "subquery"
+                "predicate"
             ]
         ]
     },
     {
-        "name": "%%boolPri_rr21",
+        "name": "%%boolPri_rr11",
         "bnf": [
             [
                 "ALL_SYMBOL"
