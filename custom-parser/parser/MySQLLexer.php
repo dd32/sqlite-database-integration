@@ -893,6 +893,11 @@ class MySQLLexer {
 	const INTERSECT_SYMBOL = 811; // missing in MySQLLexer.g4
 	const ATTRIBUTE_SYMBOL = 812; // missing in MySQLLexer.g4
 
+	// Comments
+	const COMMENT = 900;
+	const MYSQL_COMMENT_START = 901;
+	const MYSQL_COMMENT_END = 902;
+
 	// Special tokens
     const EOF = -1;
     const EMPTY_TOKEN = -2;
@@ -1974,6 +1979,7 @@ class MySQLLexer {
     protected $tokenInstance;
     protected $serverVersion;
     protected $sqlModes;
+    protected $inVersionComment = false;
 
     public function __construct(string $input, int $serverVersion = 80038, int $sqlModes = 0)
     {
@@ -2019,7 +2025,7 @@ class MySQLLexer {
     {
         do {
 			$this->nextToken();
-		} while ($this->tokenInstance === null);
+		} while ($this->tokenInstance === null || $this->tokenInstance->channel === self::CHANNEL_HIDDEN);
 		return $this->tokenInstance;
     }
 
@@ -2137,10 +2143,21 @@ class MySQLLexer {
 			}
 		} elseif ($la === '*') {
 			$this->consume();
-			$this->type = self::MULT_OPERATOR;
+			if ($la2 === '/' && $this->inVersionComment) {
+				$this->consume(); // Consume the '/'.
+				$this->type = self::MYSQL_COMMENT_END;
+				$this->channel = self::CHANNEL_HIDDEN;
+				$this->inVersionComment = false;
+			} else {
+				$this->type = self::MULT_OPERATOR;
+			}
 		} elseif ($la === '/') {
 			if ($la2 === '*') {
-				$this->blockComment();
+				if ($this->LA(3) === '!') {
+					$this->MYSQL_COMMENT();
+				} else {
+					$this->BLOCK_COMMENT();
+				}
 			} else {
 				$this->consume();
 				$this->type = self::DIV_OPERATOR;
@@ -2290,17 +2307,6 @@ class MySQLLexer {
         }
     }
 
-    /**
-     * This is a place holder to support features of MySQLBaseLexer which are not yet implemented
-     * in the PHP target.
-     *
-     * @return bool
-     */
-    protected function checkVersion(string $text): bool
-    {
-        return false;
-    }
-
     protected function IDENTIFIER_OR_KEYWORD()
     {
 		$text = strtoupper($this->getText());
@@ -2363,63 +2369,6 @@ class MySQLLexer {
 
 		// Apply synonyms.
 		$this->type = self::SYNONYMS[$this->type] ?? $this->type;
-    }
-
-    protected function blockComment()
-    {
-        $this->consume(); // Consume the '/'.
-        $this->consume(); // Consume the '*'.
-
-        // If the next character is '!', it could be a version comment.
-        if ($this->c === '!') {
-            $this->consume(); // Consume the '!'.
-
-            // If the next character is a digit, it's a version comment.
-            if ($this->isDigit($this->c)) {
-                // Consume all digits.
-                while ($this->isDigit($this->c)) {
-                    $this->consume();
-                }
-
-                // Check if the version comment is active for the current server version.
-                if ($this->checkVersion($this->getText())) {
-                    // If it's active, treat the content as regular SQL code.
-                    $this->MYSQL_COMMENT_START();
-                    $this->sqlCodeInComment();
-                } else {
-                    // If it's not active, skip the comment content.
-                    $this->skipCommentContent();
-                }
-            } else {
-                // If it's not a version comment, treat it as a regular multi-line comment.
-                $this->MYSQL_COMMENT_START();
-                $this->skipCommentContent();
-            }
-        } else {
-            // If the next character is not '!', it's a regular multi-line comment.
-            $this->skipCommentContent();
-        }
-
-        // Set the channel to HIDDEN for block comments.
-        $this->channel = self::CHANNEL_HIDDEN;
-    }
-
-    protected function skipCommentContent(): void
-    {
-        while ($this->c !== null) {
-            if ($this->c === '*' && $this->n === '/') {
-                $this->consume(); // Consume the '*'.
-                $this->consume(); // Consume the '/'.
-                break;
-            }
-            $this->consume();
-        }
-    }
-
-    protected function sqlCodeInComment(): void
-    {
-        $this->skipCommentContent();
-        $this->VERSION_COMMENT_END();
     }
 
     protected function NUMBER()
@@ -2606,6 +2555,7 @@ class MySQLLexer {
             $this->consume();
         }
 
+        $this->type = self::COMMENT;
         $this->channel = self::CHANNEL_HIDDEN;
     }
 
@@ -2625,44 +2575,7 @@ class MySQLLexer {
             $this->consume();
         }
 
-        $this->channel = self::CHANNEL_HIDDEN;
-    }
-
-    protected function MYSQL_COMMENT_START()
-    {
-        // TODO: use a lexer mode instead of a member variable.
-        // Currently not used by the PHP target.
-        return;
-    }
-
-    protected function VERSION_COMMENT_END()
-    {
-        // Currently not used by the PHP target.
-        return;
-    }
-
-    protected function VERSION_COMMENT_START()
-    {
-        $this->consume(); // Consume the '/*'.
-        $this->consume(); // Consume the '!'.
-        while ($this->isDigit($this->c)) {
-            $this->consume();
-        }
-        if ($this->checkVersion($this->getText())) {
-            // If the version check passes, consume the rest of the comment
-            while ($this->c !== null) {
-                if ($this->c === '*' && $this->n === '/') {
-                    $this->consume(); // Consume the '*'.
-                    $this->consume(); // Consume the '/'.
-                    break;
-                }
-                $this->consume();
-            }
-        } else {
-            // If the version check fails, skip to the end of the comment.
-            $this->skipCommentContent();
-        }
-
+        $this->type = self::COMMENT;
         $this->channel = self::CHANNEL_HIDDEN;
     }
 
@@ -2671,7 +2584,55 @@ class MySQLLexer {
         $this->consume(); // Consume the '/'.
         $this->consume(); // Consume the '*'.
         $this->skipCommentContent();
+        $this->type = self::COMMENT;
         $this->channel = self::CHANNEL_HIDDEN;
+    }
+
+    protected function MYSQL_COMMENT() {
+        // MySQL-specific comment in one of the following forms:
+        //   1. /*! ... */      - The content is treated as regular SQL code.
+        //   2. /*!12345 ... */ - The content is treated as SQL code when "server version >= 12345".
+        $this->consume(); // Consume the '/'.
+        $this->consume(); // Consume the '*'.
+        $this->consume(); // Consume the '!'.
+
+        // Check if the next 5 characters are digits.
+        $is_version_comment = true;
+        for ($i = 0; $i < 5; $i++) {
+            if (!$this->isDigit($this->c)) {
+                $is_version_comment = false;
+                break;
+            }
+            $this->consume(); // Consume the digit.
+        }
+
+        // For version comments, extract the version number.
+        $version = $is_version_comment
+            ? (int)substr($this->getText(), 3) // Strip the '/*!' prefix.
+            : 0;
+
+        if ($this->serverVersion < $version) {
+            // When version not satisfied. Treat the content as a regular comment.
+            $this->skipCommentContent();
+            $this->type = self::COMMENT;
+        } else {
+            // Version satisfied or not specified. Treat the content as SQL code.
+            $this->inVersionComment = true;
+            $this->type = self::MYSQL_COMMENT_START;
+        }
+        $this->channel = self::CHANNEL_HIDDEN;
+    }
+
+    protected function skipCommentContent(): void
+    {
+        while ($this->c !== null) {
+            if ($this->c === '*' && $this->n === '/') {
+                $this->consume(); // Consume the '*'.
+                $this->consume(); // Consume the '/'.
+                break;
+            }
+            $this->consume();
+        }
     }
 
     // Helper functions -----------------------------------------------------------------------------------------------------
@@ -2704,7 +2665,7 @@ class MySQLToken
 {
     public $type;
     public $text;
-    private $channel;
+    public $channel;
 
     public function __construct($type, $text, $channel=null)
     {
