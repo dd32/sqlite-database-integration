@@ -15934,10 +15934,10 @@
         ]
     },
     {
-        "name": "%showStatement01261_zero_or_one",
+        "name": "%showStatement01271_zero_or_one",
         "bnf": [
             [
-                "%showStatement01261"
+                "%showStatement01271"
             ],
             [
                 "\u03b5"
@@ -15945,7 +15945,7 @@
         ]
     },
     {
-        "name": "%showStatement01261",
+        "name": "%showStatement01271",
         "bnf": [
             [
                 "FOR_SYMBOL",
@@ -16386,10 +16386,10 @@
         ]
     },
     {
-        "name": "%showStatement01261_zero_or_one",
+        "name": "%showStatement01271_zero_or_one",
         "bnf": [
             [
-                "%showStatement01261"
+                "%showStatement01271"
             ],
             [
                 "\u03b5"
@@ -16550,14 +16550,14 @@
             ],
             [
                 "GRANTS_SYMBOL",
-                "%showStatement01261_zero_or_one"
-            ],
-            [
-                "GRANTS_SYMBOL",
                 "FOR_SYMBOL",
                 "user",
                 "USING_SYMBOL",
                 "userList"
+            ],
+            [
+                "GRANTS_SYMBOL",
+                "%showStatement01271_zero_or_one"
             ],
             [
                 "MASTER_SYMBOL",

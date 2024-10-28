@@ -2357,8 +2357,10 @@ showStatement:
         | value = COLLATION_SYMBOL likeOrWhere?
         | {serverVersion < 50700}? value = CONTRIBUTORS_SYMBOL
         | value = PRIVILEGES_SYMBOL
-        | value = GRANTS_SYMBOL (FOR_SYMBOL user)?
+        /* @FIX: Moved "GRANTS_SYMBOL ... USING_SYMBOL" before "GRANTS_SYMBOL ..." to solve conflict. */
         | value = GRANTS_SYMBOL FOR_SYMBOL user USING_SYMBOL userList
+        | value = GRANTS_SYMBOL (FOR_SYMBOL user)?
+        /*| value = GRANTS_SYMBOL FOR_SYMBOL user USING_SYMBOL userList */
         | value = MASTER_SYMBOL STATUS_SYMBOL
         | value = CREATE_SYMBOL (
             object = DATABASE_SYMBOL ifNotExists? schemaRef
