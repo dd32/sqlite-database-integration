@@ -50,6 +50,8 @@ $commands = [
 	'enable_ps_protocol',
 	'disable_query_log',
 	'enable_query_log',
+	'disable_reconnect',
+	'enable_reconnect',
 	'disable_result_log',
 	'enable_result_log',
 	'disable_rpl_parse',
