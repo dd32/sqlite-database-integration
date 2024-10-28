@@ -146,7 +146,7 @@ $commandsPattern =
 			$commands
 		)
 	)
-	. ')(\s+|\()';
+	. ')(\s+|\(|$)';
 
 $skipPattern = "/^($prefixesPattern|$commandsPattern)/i";
 
