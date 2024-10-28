@@ -120,12 +120,6 @@ SELECT QUOTE('\')"
 "FLUSH TABLES mysql.events"
 disable_result_log
 enable_result_log
-"EXPLAIN
-DELETE LOW_PRIORITY QUICK IGNORE
-FROM t1 PARTITION (p1)
-WHERE c1 > 0
-ORDER BY c2
-LIMIT 10"
 echo
 "FLUSH LOCAL TABLES test.t1, test.t2 for ExPoRt"
 "FLUSH TABLE db1.t1 FOR EXPORT"
@@ -260,18 +254,6 @@ KEY `functional_index` ((radians(`c1`))) USING BTREE COMMENT 'you''re'
 "SELECT 'a%' LIKE 'a!%' ESCAPE '$', 'a%' LIKE 'a!' || '%' ESCAPE '$'"
 "SELECT 'a%' NOT LIKE 'a!%' ESCAPE '$', 'a%' NOT LIKE 'a!' || '%' ESCAPE '$'"
 "SELECT cast( NULL AT TIME ZONE 'UTC' AS DATETIME )"
-"DELETE FROM t1 PARTITION(subp1) WHERE b = ""REPLACEd by REPLACE"""
-"DELETE FROM t1 PARTITION (pNeg) WHERE a = -1"
-"DELETE FROM t1 PARTITION (subp1) WHERE b like '%subp1%'"
-"DELETE FROM t1 PARTITION (subp1) WHERE b = 'p0-9:subp3'"
-"DELETE FROM t1 PARTITION (`p0-9`) WHERE b = 'p0-9:subp3'"
-"DELETE FROM t1 PARTITION (subp3)"
-"DELETE FROM t1 PARTITION (`p0-29`)"
-"DELETE FROM t1 PARTITION (p2)"
-"DELETE FROM t1 PARTITION (p0)
-WHERE a = (SELECT a + 2 FROM t2 WHERE a = 1)"
-"EXPLAIN DELETE FROM t1 PARTITION (p0)
-WHERE a = (SELECT a + 2 FROM t2 WHERE a = 1)"
 "create table t9 (a date not null) partition by RANGE(TO_DAYS(a)) (
 partition p0 values less than (732299), -- 2004-12-19
 partition p1 values less than (732468), -- 2005-06-06

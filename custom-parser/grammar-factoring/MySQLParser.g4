@@ -5067,7 +5067,6 @@ roleOrIdentifierKeyword:
         | OPTIONS_SYMBOL
         | OWNER_SYMBOL
         | PARSER_SYMBOL
-        | PARTITION_SYMBOL
         | PORT_SYMBOL
         | PRECEDES_SYMBOL
         | PREPARE_SYMBOL
