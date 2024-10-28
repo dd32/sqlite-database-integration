@@ -256,10 +256,9 @@ foreach (scandir($testsDir) as $i => $file) {
 				} else {
 					if (!$skipNext) {
 						$queries[$query] = true;
-					} else {
-						$skipNext = false;
 					}
 				}
+				$skipNext = false;
 
 				$query = '';
 
