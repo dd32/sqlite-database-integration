@@ -236,12 +236,16 @@ foreach (scandir($testsDir) as $i => $file) {
 			$char = $line[$i];
 
 			// Handle quotes.
-			$is_escaped = ($line[$i - 1] ?? '') === '\\' && ($line[$i - 2] ?? '') !== '\\';
-			if (!$is_escaped && ($char === '\'' || $char === '"' || $char === '`')) {
-				if ($quotes === null) {
-					$quotes = $char; // start
-				} elseif ($quotes === $char) {
-					$quotes = null; // end
+			if ($char === '\'' || $char === '"' || $char === '`') {
+				$prefix = substr($line, 0, $i);
+				$slashes = strlen($prefix) - strlen(rtrim($prefix, '\\'));
+				$is_escaped = $slashes % 2 === 1;
+				if (!$is_escaped) {
+					if ($quotes === null) {
+						$quotes = $char; // start
+					} elseif ($quotes === $char) {
+						$quotes = null; // end
+					}
 				}
 			}
 
