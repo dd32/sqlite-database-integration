@@ -7015,9 +7015,6 @@
                 "lockingClauseList_zero_or_one"
             ],
             [
-                "queryExpressionParens"
-            ],
-            [
                 "selectStatementWithInto"
             ]
         ]

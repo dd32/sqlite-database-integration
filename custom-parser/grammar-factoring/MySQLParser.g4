@@ -1044,9 +1044,19 @@ replaceStatement:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-selectStatement:
+/*selectStatement:
     queryExpression lockingClauseList?
     | queryExpressionParens
+    | selectStatementWithInto
+;*/
+
+/*
+ * @FIX:
+ * Fix "selectStatement" to solve conflicts between "queryExpressionParens" and "selectStatementWithInto".
+ * Since "queryExpression" already contains "queryExpressionParens" as a subrule, we can remove it here.
+ */
+selectStatement:
+    queryExpression lockingClauseList?
     | selectStatementWithInto
 ;
 
