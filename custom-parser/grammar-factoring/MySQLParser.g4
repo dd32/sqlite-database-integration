@@ -1097,7 +1097,7 @@ selectStatement:
 selectStatementWithInto:
     OPEN_PAR_SYMBOL selectStatementWithInto CLOSE_PAR_SYMBOL
     | queryExpression intoClause lockingClauseList?
-    | lockingClauseList intoClause
+    | queryExpression lockingClauseList intoClause /* @FIX: Add missing "queryExpression" prefix. */
 ;
 
 queryExpression:

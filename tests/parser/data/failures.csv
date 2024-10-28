@@ -264,8 +264,6 @@ enable_info
 disable_info
 disable_reconnect
 enable_reconnect
-"SELECT 1 FROM DUAL LIMIT 1 FOR UPDATE INTO @var"
-"SELECT 1 UNION SELECT 1 FOR UPDATE INTO @var"
 disable_warnings
 "log_sink_test"";
 
@@ -299,8 +297,6 @@ KEY `functional_index` ((radians(`c1`))) USING BTREE COMMENT 'you''re'
 "SELECT 'a%' NOT LIKE 'a!%' ESCAPE '!', 'a%' NOT LIKE 'a!' || '%' ESCAPE '!'"
 "SELECT 'a%' LIKE 'a!%' ESCAPE '$', 'a%' LIKE 'a!' || '%' ESCAPE '$'"
 "SELECT 'a%' NOT LIKE 'a!%' ESCAPE '$', 'a%' NOT LIKE 'a!' || '%' ESCAPE '$'"
-"SELECT 1 UNION SELECT 1 FROM DUAL FOR UPDATE INTO @var"
-"(SELECT 1 UNION SELECT 1 FROM DUAL FOR UPDATE INTO @var)"
 "SELECT cast( NULL AT TIME ZONE 'UTC' AS DATETIME )"
 "DELETE FROM t1 PARTITION(subp1) WHERE b = ""REPLACEd by REPLACE"""
 "DELETE FROM t1 PARTITION (pNeg) WHERE a = -1"

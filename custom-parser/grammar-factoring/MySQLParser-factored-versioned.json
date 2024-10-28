@@ -7044,6 +7044,7 @@
                 "lockingClauseList_zero_or_one"
             ],
             [
+                "queryExpression",
                 "lockingClauseList",
                 "intoClause"
             ]
