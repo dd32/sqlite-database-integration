@@ -5877,20 +5877,20 @@
         ]
     },
     {
-        "versions": "serverVersion < 50709",
+        "versions": "serverVersion >= 50709",
         "name": "%doStatement0100",
         "bnf": [
             [
-                "exprList"
+                "selectItemList"
             ]
         ]
     },
     {
-        "versions": "serverVersion >= 50709",
+        "versions": "serverVersion < 50709",
         "name": "%doStatement0110",
         "bnf": [
             [
-                "selectItemList"
+                "exprList"
             ]
         ]
     },

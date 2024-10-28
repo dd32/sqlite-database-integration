@@ -916,10 +916,21 @@ deleteStatementOption: // opt_delete_option in sql_yacc.yy, but the name collide
     | IGNORE_SYMBOL
 ;
 
-doStatement:
+/*doStatement:
     DO_SYMBOL (
         {serverVersion < 50709}? exprList
         | {serverVersion >= 50709}? selectItemList
+    )
+;*/
+
+/*
+ * @FIX:
+ * Reorder "selectItemList" and "exprList" to match "selectItemList", as we don't handle versions yet.
+ */
+doStatement:
+    DO_SYMBOL (
+        {serverVersion >= 50709}? selectItemList
+        | {serverVersion < 50709}? exprList
     )
 ;
 
