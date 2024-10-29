@@ -13279,17 +13279,6 @@
         ]
     },
     {
-        "name": "%alterUserTail12_zero_or_one",
-        "bnf": [
-            [
-                "%alterUserTail12"
-            ],
-            [
-                "\u03b5"
-            ]
-        ]
-    },
-    {
         "name": "alterUserTail",
         "bnf": [
             [
@@ -13297,8 +13286,7 @@
             ],
             [
                 "%alterUserTail10",
-                "createUserTail",
-                "%alterUserTail12_zero_or_one"
+                "createUserTail"
             ]
         ]
     },
@@ -13369,46 +13357,6 @@
         ]
     },
     {
-        "name": "%alterUserTail12000",
-        "bnf": [
-            [
-                "COMMENT_SYMBOL"
-            ],
-            [
-                "ATTRIBUTE_SYMBOL"
-            ]
-        ]
-    },
-    {
-        "versions": "serverVersion >= 80021",
-        "name": "%alterUserTail1200",
-        "bnf": [
-            [
-                "%alterUserTail12000",
-                "textString"
-            ]
-        ]
-    },
-    {
-        "name": "%alterUserTail12_zero_or_one",
-        "bnf": [
-            [
-                "%alterUserTail12"
-            ],
-            [
-                "\u03b5"
-            ]
-        ]
-    },
-    {
-        "name": "%alterUserTail12",
-        "bnf": [
-            [
-                "%alterUserTail1200"
-            ]
-        ]
-    },
-    {
         "name": "userFunction",
         "bnf": [
             [
@@ -13462,6 +13410,46 @@
         ]
     },
     {
+        "name": "%createUserTail003000",
+        "bnf": [
+            [
+                "COMMENT_SYMBOL"
+            ],
+            [
+                "ATTRIBUTE_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80021",
+        "name": "%createUserTail00300",
+        "bnf": [
+            [
+                "%createUserTail003000",
+                "textString"
+            ]
+        ]
+    },
+    {
+        "name": "%createUserTail003_zero_or_one",
+        "bnf": [
+            [
+                "%createUserTail003"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%createUserTail003",
+        "bnf": [
+            [
+                "%createUserTail00300"
+            ]
+        ]
+    },
+    {
         "name": "requireClause_zero_or_one",
         "bnf": [
             [
@@ -13499,13 +13487,25 @@
         ]
     },
     {
+        "name": "%createUserTail003_zero_or_one",
+        "bnf": [
+            [
+                "%createUserTail003"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
         "versions": "serverVersion >= 50706",
         "name": "%createUserTail00",
         "bnf": [
             [
                 "requireClause_zero_or_one",
                 "connectOptions_zero_or_one",
-                "accountLockPasswordExpireOptions_zero_or_more"
+                "accountLockPasswordExpireOptions_zero_or_more",
+                "%createUserTail003_zero_or_one"
             ]
         ]
     },
