@@ -3037,10 +3037,10 @@
         ]
     },
     {
-        "name": "%createProcedure04_zero_or_one",
+        "name": "%createProcedure05_zero_or_one",
         "bnf": [
             [
-                "%createProcedure04"
+                "%createProcedure05"
             ],
             [
                 "\u03b5"
@@ -3068,9 +3068,10 @@
             [
                 "definerClause_zero_or_one",
                 "PROCEDURE_SYMBOL",
+                "%createProcedure02",
                 "procedureName",
                 "OPEN_PAR_SYMBOL",
-                "%createProcedure04_zero_or_one",
+                "%createProcedure05_zero_or_one",
                 "CLOSE_PAR_SYMBOL",
                 "routineCreateOption_zero_or_more",
                 "compoundStatement"
@@ -3078,14 +3079,10 @@
         ]
     },
     {
-        "name": "%createProcedure0401_zero_or_more",
+        "name": "ifNotExists_zero_or_one",
         "bnf": [
             [
-                "%createProcedure0401",
-                "%createProcedure0401_zero_or_more"
-            ],
-            [
-                "%createProcedure0401"
+                "ifNotExists"
             ],
             [
                 "\u03b5"
@@ -3093,7 +3090,39 @@
         ]
     },
     {
-        "name": "%createProcedure0401",
+        "versions": "serverVersion >= 80029",
+        "name": "%createProcedure0200",
+        "bnf": [
+            [
+                "ifNotExists_zero_or_one"
+            ]
+        ]
+    },
+    {
+        "name": "%createProcedure02",
+        "bnf": [
+            [
+                "%createProcedure0200"
+            ]
+        ]
+    },
+    {
+        "name": "%createProcedure0501_zero_or_more",
+        "bnf": [
+            [
+                "%createProcedure0501",
+                "%createProcedure0501_zero_or_more"
+            ],
+            [
+                "%createProcedure0501"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%createProcedure0501",
         "bnf": [
             [
                 "COMMA_SYMBOL",
@@ -3102,14 +3131,14 @@
         ]
     },
     {
-        "name": "%createProcedure0401_zero_or_more",
+        "name": "%createProcedure0501_zero_or_more",
         "bnf": [
             [
-                "%createProcedure0401",
-                "%createProcedure0401_zero_or_more"
+                "%createProcedure0501",
+                "%createProcedure0501_zero_or_more"
             ],
             [
-                "%createProcedure0401"
+                "%createProcedure0501"
             ],
             [
                 "\u03b5"
@@ -3117,10 +3146,10 @@
         ]
     },
     {
-        "name": "%createProcedure04_zero_or_one",
+        "name": "%createProcedure05_zero_or_one",
         "bnf": [
             [
-                "%createProcedure04"
+                "%createProcedure05"
             ],
             [
                 "\u03b5"
@@ -3128,11 +3157,11 @@
         ]
     },
     {
-        "name": "%createProcedure04",
+        "name": "%createProcedure05",
         "bnf": [
             [
                 "procedureParameter",
-                "%createProcedure0401_zero_or_more"
+                "%createProcedure0501_zero_or_more"
             ]
         ]
     },
@@ -3148,10 +3177,10 @@
         ]
     },
     {
-        "name": "%createFunction04_zero_or_one",
+        "name": "%createFunction05_zero_or_one",
         "bnf": [
             [
-                "%createFunction04"
+                "%createFunction05"
             ],
             [
                 "\u03b5"
@@ -3179,9 +3208,10 @@
             [
                 "definerClause_zero_or_one",
                 "FUNCTION_SYMBOL",
+                "%createFunction02",
                 "functionName",
                 "OPEN_PAR_SYMBOL",
-                "%createFunction04_zero_or_one",
+                "%createFunction05_zero_or_one",
                 "CLOSE_PAR_SYMBOL",
                 "RETURNS_SYMBOL",
                 "typeWithOptCollate",
@@ -3191,14 +3221,10 @@
         ]
     },
     {
-        "name": "%createFunction0401_zero_or_more",
+        "name": "ifNotExists_zero_or_one",
         "bnf": [
             [
-                "%createFunction0401",
-                "%createFunction0401_zero_or_more"
-            ],
-            [
-                "%createFunction0401"
+                "ifNotExists"
             ],
             [
                 "\u03b5"
@@ -3206,7 +3232,39 @@
         ]
     },
     {
-        "name": "%createFunction0401",
+        "versions": "serverVersion >= 80029",
+        "name": "%createFunction0200",
+        "bnf": [
+            [
+                "ifNotExists_zero_or_one"
+            ]
+        ]
+    },
+    {
+        "name": "%createFunction02",
+        "bnf": [
+            [
+                "%createFunction0200"
+            ]
+        ]
+    },
+    {
+        "name": "%createFunction0501_zero_or_more",
+        "bnf": [
+            [
+                "%createFunction0501",
+                "%createFunction0501_zero_or_more"
+            ],
+            [
+                "%createFunction0501"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%createFunction0501",
         "bnf": [
             [
                 "COMMA_SYMBOL",
@@ -3215,14 +3273,14 @@
         ]
     },
     {
-        "name": "%createFunction0401_zero_or_more",
+        "name": "%createFunction0501_zero_or_more",
         "bnf": [
             [
-                "%createFunction0401",
-                "%createFunction0401_zero_or_more"
+                "%createFunction0501",
+                "%createFunction0501_zero_or_more"
             ],
             [
-                "%createFunction0401"
+                "%createFunction0501"
             ],
             [
                 "\u03b5"
@@ -3230,10 +3288,10 @@
         ]
     },
     {
-        "name": "%createFunction04_zero_or_one",
+        "name": "%createFunction05_zero_or_one",
         "bnf": [
             [
-                "%createFunction04"
+                "%createFunction05"
             ],
             [
                 "\u03b5"
@@ -3241,11 +3299,11 @@
         ]
     },
     {
-        "name": "%createFunction04",
+        "name": "%createFunction05",
         "bnf": [
             [
                 "functionParameter",
-                "%createFunction0401_zero_or_more"
+                "%createFunction0501_zero_or_more"
             ]
         ]
     },
@@ -4474,9 +4532,10 @@
             [
                 "definerClause_zero_or_one",
                 "TRIGGER_SYMBOL",
+                "%createTrigger02",
                 "triggerName",
-                "%createTrigger03",
                 "%createTrigger04",
+                "%createTrigger05",
                 "ON_SYMBOL",
                 "tableRef",
                 "FOR_SYMBOL",
@@ -4488,7 +4547,35 @@
         ]
     },
     {
-        "name": "%createTrigger03",
+        "name": "ifNotExists_zero_or_one",
+        "bnf": [
+            [
+                "ifNotExists"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80029",
+        "name": "%createTrigger0200",
+        "bnf": [
+            [
+                "ifNotExists_zero_or_one"
+            ]
+        ]
+    },
+    {
+        "name": "%createTrigger02",
+        "bnf": [
+            [
+                "%createTrigger0200"
+            ]
+        ]
+    },
+    {
+        "name": "%createTrigger04",
         "bnf": [
             [
                 "BEFORE_SYMBOL"
@@ -4499,7 +4586,7 @@
         ]
     },
     {
-        "name": "%createTrigger04",
+        "name": "%createTrigger05",
         "bnf": [
             [
                 "INSERT_SYMBOL"

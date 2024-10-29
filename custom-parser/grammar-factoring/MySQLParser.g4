@@ -512,14 +512,22 @@ createRoutine: // Rule for external use only.
     CREATE_SYMBOL (createProcedure | createFunction | createUdf) SEMICOLON_SYMBOL? EOF
 ;
 
+/*
+ * @FIX:
+ * Add missing "ifNotExists?".
+ */
 createProcedure:
-    definerClause? PROCEDURE_SYMBOL procedureName OPEN_PAR_SYMBOL (
+    definerClause? PROCEDURE_SYMBOL ({serverVersion >= 80029}? ifNotExists?) procedureName OPEN_PAR_SYMBOL (
         procedureParameter (COMMA_SYMBOL procedureParameter)*
     )? CLOSE_PAR_SYMBOL routineCreateOption* compoundStatement
 ;
 
+/*
+ * @FIX:
+ * Add missing "ifNotExists?".
+ */
 createFunction:
-    definerClause? FUNCTION_SYMBOL functionName OPEN_PAR_SYMBOL (
+    definerClause? FUNCTION_SYMBOL ({serverVersion >= 80029}? ifNotExists?) functionName OPEN_PAR_SYMBOL (
         functionParameter (COMMA_SYMBOL functionParameter)*
     )? CLOSE_PAR_SYMBOL RETURNS_SYMBOL typeWithOptCollate routineCreateOption* compoundStatement
 ;
@@ -740,8 +748,12 @@ viewSuid:
     SQL_SYMBOL SECURITY_SYMBOL (DEFINER_SYMBOL | INVOKER_SYMBOL)
 ;
 
+/*
+ * @FIX:
+ * Add missing "ifNotExists?".
+ */
 createTrigger:
-    definerClause? TRIGGER_SYMBOL triggerName timing = (BEFORE_SYMBOL | AFTER_SYMBOL) event = (
+    definerClause? TRIGGER_SYMBOL ({serverVersion >= 80029}? ifNotExists?) triggerName timing = (BEFORE_SYMBOL | AFTER_SYMBOL) event = (
         INSERT_SYMBOL
         | UPDATE_SYMBOL
         | DELETE_SYMBOL
