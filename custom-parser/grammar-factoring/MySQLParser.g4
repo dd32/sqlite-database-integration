@@ -2174,6 +2174,8 @@ roleOrPrivilege:
         | roleIdentifierOrText columnInternalRefList?
     )
     | (SELECT_SYMBOL | INSERT_SYMBOL | UPDATE_SYMBOL | REFERENCES_SYMBOL) columnInternalRefList?
+		/* @FIX: Moved "CREATE/DROP ROLE" before "CREATE ..." and "DROP ..." to solve conflict. */
+		| {serverVersion > 80000}? (CREATE_SYMBOL | DROP_SYMBOL) ROLE_SYMBOL
     | (
         DELETE_SYMBOL
         | USAGE_SYMBOL
@@ -2199,7 +2201,7 @@ roleOrPrivilege:
     | REPLICATION_SYMBOL object = (CLIENT_SYMBOL | SLAVE_SYMBOL)
     | SHOW_SYMBOL VIEW_SYMBOL
     | ALTER_SYMBOL ROUTINE_SYMBOL?
-    | {serverVersion > 80000}? (CREATE_SYMBOL | DROP_SYMBOL) ROLE_SYMBOL
+    /*| {serverVersion > 80000}? (CREATE_SYMBOL | DROP_SYMBOL) ROLE_SYMBOL */
 ;
 
 /*grantIdentifier:

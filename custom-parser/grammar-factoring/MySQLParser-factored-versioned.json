@@ -14639,10 +14639,10 @@
         ]
     },
     {
-        "name": "%roleOrPrivilege51_zero_or_one",
+        "name": "%roleOrPrivilege61_zero_or_one",
         "bnf": [
             [
-                "%roleOrPrivilege51"
+                "%roleOrPrivilege61"
             ],
             [
                 "\u03b5"
@@ -14674,6 +14674,9 @@
                 "%roleOrPrivilege20"
             ],
             [
+                "%roleOrPrivilege30"
+            ],
+            [
                 "GRANT_SYMBOL",
                 "OPTION_SYMBOL"
             ],
@@ -14683,7 +14686,7 @@
             ],
             [
                 "CREATE_SYMBOL",
-                "%roleOrPrivilege51_zero_or_one"
+                "%roleOrPrivilege61_zero_or_one"
             ],
             [
                 "LOCK_SYMBOL",
@@ -14691,7 +14694,7 @@
             ],
             [
                 "REPLICATION_SYMBOL",
-                "%roleOrPrivilege71"
+                "%roleOrPrivilege81"
             ],
             [
                 "SHOW_SYMBOL",
@@ -14700,9 +14703,6 @@
             [
                 "ALTER_SYMBOL",
                 "ROUTINE_SYMBOL_zero_or_one"
-            ],
-            [
-                "%roleOrPrivilege100"
             ]
         ]
     },
@@ -14769,7 +14769,28 @@
         ]
     },
     {
+        "name": "%roleOrPrivilege200",
+        "bnf": [
+            [
+                "CREATE_SYMBOL"
+            ],
+            [
+                "DROP_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion > 80000",
         "name": "%roleOrPrivilege20",
+        "bnf": [
+            [
+                "%roleOrPrivilege200",
+                "ROLE_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%roleOrPrivilege30",
         "bnf": [
             [
                 "DELETE_SYMBOL"
@@ -14813,7 +14834,7 @@
         ]
     },
     {
-        "name": "%roleOrPrivilege5110",
+        "name": "%roleOrPrivilege6110",
         "bnf": [
             [
                 "ROUTINE_SYMBOL"
@@ -14830,10 +14851,10 @@
         ]
     },
     {
-        "name": "%roleOrPrivilege51_zero_or_one",
+        "name": "%roleOrPrivilege61_zero_or_one",
         "bnf": [
             [
-                "%roleOrPrivilege51"
+                "%roleOrPrivilege61"
             ],
             [
                 "\u03b5"
@@ -14841,46 +14862,25 @@
         ]
     },
     {
-        "name": "%roleOrPrivilege51",
+        "name": "%roleOrPrivilege61",
         "bnf": [
             [
                 "TEMPORARY_SYMBOL",
                 "TABLES_SYMBOL"
             ],
             [
-                "%roleOrPrivilege5110"
+                "%roleOrPrivilege6110"
             ]
         ]
     },
     {
-        "name": "%roleOrPrivilege71",
+        "name": "%roleOrPrivilege81",
         "bnf": [
             [
                 "CLIENT_SYMBOL"
             ],
             [
                 "SLAVE_SYMBOL"
-            ]
-        ]
-    },
-    {
-        "name": "%roleOrPrivilege1000",
-        "bnf": [
-            [
-                "CREATE_SYMBOL"
-            ],
-            [
-                "DROP_SYMBOL"
-            ]
-        ]
-    },
-    {
-        "versions": "serverVersion > 80000",
-        "name": "%roleOrPrivilege100",
-        "bnf": [
-            [
-                "%roleOrPrivilege1000",
-                "ROLE_SYMBOL"
             ]
         ]
     },
