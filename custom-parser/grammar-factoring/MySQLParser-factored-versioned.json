@@ -11462,14 +11462,10 @@
         ]
     },
     {
-        "name": "%changeReplication04_zero_or_more",
+        "name": "channel_zero_or_one",
         "bnf": [
             [
-                "%changeReplication04",
-                "%changeReplication04_zero_or_more"
-            ],
-            [
-                "%changeReplication04"
+                "channel"
             ],
             [
                 "\u03b5"
@@ -11477,10 +11473,25 @@
         ]
     },
     {
-        "name": "%changeReplication05_zero_or_one",
+        "name": "%changeReplication14_zero_or_more",
         "bnf": [
             [
-                "%changeReplication05"
+                "%changeReplication14",
+                "%changeReplication14_zero_or_more"
+            ],
+            [
+                "%changeReplication14"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%changeReplication15_zero_or_one",
+        "bnf": [
+            [
+                "%changeReplication15"
             ],
             [
                 "\u03b5"
@@ -11493,22 +11504,30 @@
             [
                 "CHANGE_SYMBOL",
                 "REPLICATION_SYMBOL",
+                "SOURCE_SYMBOL",
+                "TO_SYMBOL",
+                "changeReplicationSourceOptions",
+                "channel_zero_or_one"
+            ],
+            [
+                "CHANGE_SYMBOL",
+                "REPLICATION_SYMBOL",
                 "FILTER_SYMBOL",
                 "filterDefinition",
-                "%changeReplication04_zero_or_more",
-                "%changeReplication05_zero_or_one"
+                "%changeReplication14_zero_or_more",
+                "%changeReplication15_zero_or_one"
             ]
         ]
     },
     {
-        "name": "%changeReplication04_zero_or_more",
+        "name": "%changeReplication14_zero_or_more",
         "bnf": [
             [
-                "%changeReplication04",
-                "%changeReplication04_zero_or_more"
+                "%changeReplication14",
+                "%changeReplication14_zero_or_more"
             ],
             [
-                "%changeReplication04"
+                "%changeReplication14"
             ],
             [
                 "\u03b5"
@@ -11516,7 +11535,7 @@
         ]
     },
     {
-        "name": "%changeReplication04",
+        "name": "%changeReplication14",
         "bnf": [
             [
                 "COMMA_SYMBOL",
@@ -11526,7 +11545,7 @@
     },
     {
         "versions": "serverVersion >= 80000",
-        "name": "%changeReplication0500",
+        "name": "%changeReplication1500",
         "bnf": [
             [
                 "channel"
@@ -11534,10 +11553,10 @@
         ]
     },
     {
-        "name": "%changeReplication05_zero_or_one",
+        "name": "%changeReplication15_zero_or_one",
         "bnf": [
             [
-                "%changeReplication05"
+                "%changeReplication15"
             ],
             [
                 "\u03b5"
@@ -11545,10 +11564,545 @@
         ]
     },
     {
-        "name": "%changeReplication05",
+        "name": "%changeReplication15",
         "bnf": [
             [
-                "%changeReplication0500"
+                "%changeReplication1500"
+            ]
+        ]
+    },
+    {
+        "name": "%changeReplicationSourceOptions01_zero_or_more",
+        "bnf": [
+            [
+                "%changeReplicationSourceOptions01",
+                "%changeReplicationSourceOptions01_zero_or_more"
+            ],
+            [
+                "%changeReplicationSourceOptions01"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "changeReplicationSourceOptions",
+        "bnf": [
+            [
+                "replicationSourceOption",
+                "%changeReplicationSourceOptions01_zero_or_more"
+            ]
+        ]
+    },
+    {
+        "name": "%changeReplicationSourceOptions01_zero_or_more",
+        "bnf": [
+            [
+                "%changeReplicationSourceOptions01",
+                "%changeReplicationSourceOptions01_zero_or_more"
+            ],
+            [
+                "%changeReplicationSourceOptions01"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%changeReplicationSourceOptions01",
+        "bnf": [
+            [
+                "COMMA_SYMBOL",
+                "replicationSourceOption"
+            ]
+        ]
+    },
+    {
+        "name": "replicationSourceOption",
+        "bnf": [
+            [
+                "%replicationSourceOption00",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption10",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption20",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption30",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption40",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "%replicationSourceOption50",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption60",
+                "EQUAL_OPERATOR",
+                "ulonglong_number"
+            ],
+            [
+                "%replicationSourceOption70",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "%replicationSourceOption80",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "%replicationSourceOption90",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "%replicationSourceOption100",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "SOURCE_CONNECTION_AUTO_FAILOVER_SYMBOL",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "%replicationSourceOption120",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "%replicationSourceOption130",
+                "EQUAL_OPERATOR",
+                "textStringLiteral"
+            ],
+            [
+                "%replicationSourceOption140",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "%replicationSourceOption150",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "%replicationSourceOption160",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption170",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption180",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption190",
+                "EQUAL_OPERATOR",
+                "textLiteral"
+            ],
+            [
+                "%replicationSourceOption200",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption210",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption220",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption230",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "%replicationSourceOption240",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption250",
+                "EQUAL_OPERATOR",
+                "masterTlsCiphersuitesDef"
+            ],
+            [
+                "%replicationSourceOption260",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "%replicationSourceOption270",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "NETWORK_NAMESPACE_SYMBOL",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "IGNORE_SERVER_IDS_SYMBOL",
+                "EQUAL_OPERATOR",
+                "serverIdList"
+            ],
+            [
+                "GTID_ONLY_SYMBOL",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "PRIVILEGE_CHECKS_USER_SYMBOL",
+                "EQUAL_OPERATOR",
+                "privilegeCheckDef"
+            ],
+            [
+                "REQUIRE_ROW_FORMAT_SYMBOL",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "REQUIRE_TABLE_PRIMARY_KEY_CHECK_SYMBOL",
+                "EQUAL_OPERATOR",
+                "tablePrimaryKeyCheckDef"
+            ],
+            [
+                "ASSIGN_GTIDS_TO_ANONYMOUS_TRANSACTIONS_SYMBOL",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ],
+            [
+                "RELAY_LOG_FILE_SYMBOL",
+                "EQUAL_OPERATOR",
+                "textStringNoLinebreak"
+            ],
+            [
+                "RELAY_LOG_POS_SYMBOL",
+                "EQUAL_OPERATOR",
+                "ulong_number"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption00",
+        "bnf": [
+            [
+                "SOURCE_BIND_SYMBOL"
+            ],
+            [
+                "MASTER_BIND_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption10",
+        "bnf": [
+            [
+                "SOURCE_HOST_SYMBOL"
+            ],
+            [
+                "MASTER_HOST_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption20",
+        "bnf": [
+            [
+                "SOURCE_USER_SYMBOL"
+            ],
+            [
+                "MASTER_USER_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption30",
+        "bnf": [
+            [
+                "SOURCE_PASSWORD_SYMBOL"
+            ],
+            [
+                "MASTER_PASSWORD_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption40",
+        "bnf": [
+            [
+                "SOURCE_PORT_SYMBOL"
+            ],
+            [
+                "MASTER_PORT_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption50",
+        "bnf": [
+            [
+                "SOURCE_LOG_FILE_SYMBOL"
+            ],
+            [
+                "MASTER_LOG_FILE_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption60",
+        "bnf": [
+            [
+                "SOURCE_LOG_POS_SYMBOL"
+            ],
+            [
+                "MASTER_LOG_POS_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption70",
+        "bnf": [
+            [
+                "SOURCE_AUTO_POSITION_SYMBOL"
+            ],
+            [
+                "MASTER_AUTO_POSITION_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption80",
+        "bnf": [
+            [
+                "SOURCE_HEARTBEAT_PERIOD_SYMBOL"
+            ],
+            [
+                "MASTER_HEARTBEAT_PERIOD_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption90",
+        "bnf": [
+            [
+                "SOURCE_CONNECT_RETRY_SYMBOL"
+            ],
+            [
+                "MASTER_CONNECT_RETRY_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption100",
+        "bnf": [
+            [
+                "SOURCE_RETRY_COUNT_SYMBOL"
+            ],
+            [
+                "MASTER_RETRY_COUNT_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption120",
+        "bnf": [
+            [
+                "SOURCE_DELAY_SYMBOL"
+            ],
+            [
+                "MASTER_DELAY_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption130",
+        "bnf": [
+            [
+                "SOURCE_COMPRESSION_ALGORITHM_SYMBOL"
+            ],
+            [
+                "MASTER_COMPRESSION_ALGORITHM_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption140",
+        "bnf": [
+            [
+                "SOURCE_ZSTD_COMPRESSION_LEVEL_SYMBOL"
+            ],
+            [
+                "MASTER_ZSTD_COMPRESSION_LEVEL_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption150",
+        "bnf": [
+            [
+                "SOURCE_SSL_SYMBOL"
+            ],
+            [
+                "MASTER_SSL_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption160",
+        "bnf": [
+            [
+                "SOURCE_SSL_CA_SYMBOL"
+            ],
+            [
+                "MASTER_SSL_CA_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption170",
+        "bnf": [
+            [
+                "SOURCE_SSL_CAPATH_SYMBOL"
+            ],
+            [
+                "MASTER_SSL_CAPATH_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption180",
+        "bnf": [
+            [
+                "SOURCE_SSL_CERT_SYMBOL"
+            ],
+            [
+                "MASTER_SSL_CERT_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption190",
+        "bnf": [
+            [
+                "SOURCE_SSL_CRL_SYMBOL"
+            ],
+            [
+                "MASTER_SSL_CRL_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption200",
+        "bnf": [
+            [
+                "SOURCE_SSL_CRLPATH_SYMBOL"
+            ],
+            [
+                "MASTER_SSL_CRLPATH_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption210",
+        "bnf": [
+            [
+                "SOURCE_SSL_KEY_SYMBOL"
+            ],
+            [
+                "MASTER_SSL_KEY_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption220",
+        "bnf": [
+            [
+                "SOURCE_SSL_CIPHER_SYMBOL"
+            ],
+            [
+                "MASTER_SSL_CIPHER_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption230",
+        "bnf": [
+            [
+                "SOURCE_SSL_VERIFY_SERVER_CERT_SYMBOL"
+            ],
+            [
+                "MASTER_SSL_VERIFY_SERVER_CERT_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption240",
+        "bnf": [
+            [
+                "SOURCE_TLS_VERSION_SYMBOL"
+            ],
+            [
+                "MASTER_TLS_VERSION_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption250",
+        "bnf": [
+            [
+                "SOURCE_TLS_CIPHERSUITES_SYMBOL"
+            ],
+            [
+                "MASTER_TLS_CIPHERSUITES_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption260",
+        "bnf": [
+            [
+                "SOURCE_PUBLIC_KEY_PATH_SYMBOL"
+            ],
+            [
+                "MASTER_PUBLIC_KEY_PATH_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%replicationSourceOption270",
+        "bnf": [
+            [
+                "GET_SOURCE_PUBLIC_KEY_SYMBOL"
+            ],
+            [
+                "GET_MASTER_PUBLIC_KEY_SYMBOL"
             ]
         ]
     },
@@ -30283,10 +30837,16 @@
                 "GET_MASTER_PUBLIC_KEY_SYMBOL"
             ],
             [
+                "GET_SOURCE_PUBLIC_KEY_SYMBOL"
+            ],
+            [
                 "GRANTS_SYMBOL"
             ],
             [
                 "GROUP_REPLICATION_SYMBOL"
+            ],
+            [
+                "GTID_ONLY_SYMBOL"
             ],
             [
                 "HASH_SYMBOL"
@@ -30724,6 +31284,9 @@
                 "REMOVE_SYMBOL"
             ],
             [
+                "ASSIGN_GTIDS_TO_ANONYMOUS_TRANSACTIONS_SYMBOL"
+            ],
+            [
                 "REORGANIZE_SYMBOL"
             ],
             [
@@ -30856,7 +31419,88 @@
                 "SOUNDS_SYMBOL"
             ],
             [
+                "SOURCE_AUTO_POSITION_SYMBOL"
+            ],
+            [
+                "SOURCE_BIND_SYMBOL"
+            ],
+            [
+                "SOURCE_COMPRESSION_ALGORITHM_SYMBOL"
+            ],
+            [
+                "SOURCE_CONNECTION_AUTO_FAILOVER_SYMBOL"
+            ],
+            [
+                "SOURCE_CONNECT_RETRY_SYMBOL"
+            ],
+            [
+                "SOURCE_DELAY_SYMBOL"
+            ],
+            [
+                "SOURCE_HEARTBEAT_PERIOD_SYMBOL"
+            ],
+            [
+                "SOURCE_HOST_SYMBOL"
+            ],
+            [
+                "SOURCE_LOG_FILE_SYMBOL"
+            ],
+            [
+                "SOURCE_LOG_POS_SYMBOL"
+            ],
+            [
+                "SOURCE_PASSWORD_SYMBOL"
+            ],
+            [
+                "SOURCE_PORT_SYMBOL"
+            ],
+            [
+                "SOURCE_PUBLIC_KEY_PATH_SYMBOL"
+            ],
+            [
+                "SOURCE_RETRY_COUNT_SYMBOL"
+            ],
+            [
+                "SOURCE_SSL_CAPATH_SYMBOL"
+            ],
+            [
+                "SOURCE_SSL_CA_SYMBOL"
+            ],
+            [
+                "SOURCE_SSL_CERT_SYMBOL"
+            ],
+            [
+                "SOURCE_SSL_CIPHER_SYMBOL"
+            ],
+            [
+                "SOURCE_SSL_CRLPATH_SYMBOL"
+            ],
+            [
+                "SOURCE_SSL_CRL_SYMBOL"
+            ],
+            [
+                "SOURCE_SSL_KEY_SYMBOL"
+            ],
+            [
+                "SOURCE_SSL_SYMBOL"
+            ],
+            [
+                "SOURCE_SSL_VERIFY_SERVER_CERT_SYMBOL"
+            ],
+            [
                 "SOURCE_SYMBOL"
+            ],
+            [
+                "SOURCE_TLS_CIPHERSUITES_SYMBOL"
+            ],
+            [
+                "SOURCE_TLS_VERSION_SYMBOL"
+            ],
+            [
+                "SOURCE_USER_SYMBOL"
+            ],
+            [
+                "SOURCE_ZSTD_COMPRESSION_LEVEL_SYMBOL"
             ],
             [
                 "SQL_AFTER_GTIDS_SYMBOL"
