@@ -1519,8 +1519,16 @@ tableAlias:
     (AS_SYMBOL | {serverVersion < 80017}? EQUAL_OPERATOR)? identifier
 ;
 
-indexHintList:
+/*indexHintList:
     indexHint (COMMA_SYMBOL indexHint)*
+;*/
+
+/*
+ * @FIX:
+ * Fix "indexHintList" to use only whitespace as a separator (not commas).
+ */
+indexHintList:
+    indexHint+
 ;
 
 indexHint:

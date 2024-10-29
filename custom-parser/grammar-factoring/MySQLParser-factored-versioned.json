@@ -9681,17 +9681,14 @@
         ]
     },
     {
-        "name": "%indexHintList01_zero_or_more",
+        "name": "indexHint_one_or_more",
         "bnf": [
             [
-                "%indexHintList01",
-                "%indexHintList01_zero_or_more"
+                "indexHint",
+                "indexHint_one_or_more"
             ],
             [
-                "%indexHintList01"
-            ],
-            [
-                "\u03b5"
+                "indexHint"
             ]
         ]
     },
@@ -9699,32 +9696,7 @@
         "name": "indexHintList",
         "bnf": [
             [
-                "indexHint",
-                "%indexHintList01_zero_or_more"
-            ]
-        ]
-    },
-    {
-        "name": "%indexHintList01_zero_or_more",
-        "bnf": [
-            [
-                "%indexHintList01",
-                "%indexHintList01_zero_or_more"
-            ],
-            [
-                "%indexHintList01"
-            ],
-            [
-                "\u03b5"
-            ]
-        ]
-    },
-    {
-        "name": "%indexHintList01",
-        "bnf": [
-            [
-                "COMMA_SYMBOL",
-                "indexHint"
+                "indexHint_one_or_more"
             ]
         ]
     },
