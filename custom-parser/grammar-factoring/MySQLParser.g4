@@ -3784,7 +3784,7 @@ dataType: // type in sql_yacc.yy
     /* @FIX: Moved "CHAR_SYMBOL VARYING_SYMBOL" before "CHAR_SYMBOL ..." to solve conflict. */
     | (type = CHAR_SYMBOL VARYING_SYMBOL | type = VARCHAR_SYMBOL) fieldLength charsetWithOptBinary?
     | type = CHAR_SYMBOL fieldLength? charsetWithOptBinary?
-    | nchar fieldLength? BINARY_SYMBOL?
+    /*| nchar fieldLength? BINARY_SYMBOL? */
     | type = BINARY_SYMBOL fieldLength?
     /*| (type = CHAR_SYMBOL VARYING_SYMBOL | type = VARCHAR_SYMBOL) fieldLength charsetWithOptBinary?*/
     | (
@@ -3794,6 +3794,8 @@ dataType: // type in sql_yacc.yy
         | type = NATIONAL_SYMBOL CHAR_SYMBOL VARYING_SYMBOL
         | type = NCHAR_SYMBOL VARYING_SYMBOL
     ) fieldLength BINARY_SYMBOL?
+    /* @FIX: Moved "nchar fieldLength? BINARY_SYMBOL?" after othe nchar definitions to solve conflicts. */
+    | nchar fieldLength? BINARY_SYMBOL?
     | type = VARBINARY_SYMBOL fieldLength
     | type = YEAR_SYMBOL fieldLength? fieldOptions?
     | type = DATE_SYMBOL

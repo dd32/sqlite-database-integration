@@ -25966,17 +25966,17 @@
                 "charsetWithOptBinary_zero_or_one"
             ],
             [
-                "nchar",
-                "fieldLength_zero_or_one",
-                "BINARY_SYMBOL_zero_or_one"
-            ],
-            [
                 "BINARY_SYMBOL",
                 "fieldLength_zero_or_one"
             ],
             [
-                "%dataType90",
+                "%dataType80",
                 "fieldLength",
+                "BINARY_SYMBOL_zero_or_one"
+            ],
+            [
+                "nchar",
+                "fieldLength_zero_or_one",
                 "BINARY_SYMBOL_zero_or_one"
             ],
             [
@@ -26144,7 +26144,7 @@
         ]
     },
     {
-        "name": "%dataType90",
+        "name": "%dataType80",
         "bnf": [
             [
                 "NATIONAL_SYMBOL",
