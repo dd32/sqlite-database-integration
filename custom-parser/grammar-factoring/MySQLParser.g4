@@ -3595,8 +3595,9 @@ fieldDefinition:
             VIRTUAL_SYMBOL
             | STORED_SYMBOL
         )? (
-            {serverVersion < 80000}? gcolAttribute*
-            | {serverVersion >= 80000}? columnAttribute* // Beginning with 8.0 the full attribute set is supported.
+            /* @FIX: Reorder "columnAttribute*" and "gcolAttribute*" to match "columnAttribute*", as we don't handle versions yet. */
+            {serverVersion >= 80000}? columnAttribute* // Beginning with 8.0 the full attribute set is supported.
+            | {serverVersion < 80000}? gcolAttribute*
         )
         | columnAttribute*
     )

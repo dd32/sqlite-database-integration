@@ -24522,30 +24522,6 @@
         ]
     },
     {
-        "name": "gcolAttribute_zero_or_more",
-        "bnf": [
-            [
-                "gcolAttribute",
-                "gcolAttribute_zero_or_more"
-            ],
-            [
-                "gcolAttribute"
-            ],
-            [
-                "\u03b5"
-            ]
-        ]
-    },
-    {
-        "versions": "serverVersion < 80000",
-        "name": "%fieldDefinition0100500",
-        "bnf": [
-            [
-                "gcolAttribute_zero_or_more"
-            ]
-        ]
-    },
-    {
         "name": "columnAttribute_zero_or_more",
         "bnf": [
             [
@@ -24562,10 +24538,34 @@
     },
     {
         "versions": "serverVersion >= 80000",
-        "name": "%fieldDefinition0100510",
+        "name": "%fieldDefinition0100500",
         "bnf": [
             [
                 "columnAttribute_zero_or_more"
+            ]
+        ]
+    },
+    {
+        "name": "gcolAttribute_zero_or_more",
+        "bnf": [
+            [
+                "gcolAttribute",
+                "gcolAttribute_zero_or_more"
+            ],
+            [
+                "gcolAttribute"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion < 80000",
+        "name": "%fieldDefinition0100510",
+        "bnf": [
+            [
+                "gcolAttribute_zero_or_more"
             ]
         ]
     },
