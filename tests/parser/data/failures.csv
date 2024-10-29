@@ -67,11 +67,6 @@ foreign key (a,b) references t3 (c,d) on update set null) engine=myisam"
 "SELECT 'a%' LIKE 'a!%' ESCAPE '$', 'a%' LIKE 'a!' || '%' ESCAPE '$'"
 "SELECT 'a%' NOT LIKE 'a!%' ESCAPE '$', 'a%' NOT LIKE 'a!' || '%' ESCAPE '$'"
 "RESET PERSIST default.key_buffer_size"
-"query_attributes a b"
-"query_attributes a b c d"
-"query_attributes 'a' ""b c"""
-"query_attributes '' 'a'"
-"query_attributes 'a' 'b c'"
 "ALTER SCHEMA s1 READ ONLY DEFAULT"
 "create procedure mysqltest1.p1()
 begin

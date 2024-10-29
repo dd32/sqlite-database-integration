@@ -18,7 +18,7 @@ $prefixes = [
 	'}',
 ];
 
-// List of mysqltest commands:
+// List of mysqltest and MySQL client commands:
 $commands = [
 	'append_file',
 	'assert',
@@ -90,6 +90,7 @@ $commands = [
 	'perl',
 	'ping',
 	'query',
+	'query_attributes',
 	'query_get_value',
 	'query_horizontal',
 	'query_vertical',
