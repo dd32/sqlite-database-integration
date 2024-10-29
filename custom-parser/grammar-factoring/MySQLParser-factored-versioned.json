@@ -10013,14 +10013,10 @@
         ]
     },
     {
-        "name": "transactionCharacteristic_zero_or_more",
+        "name": "transactionCharacteristicList_zero_or_one",
         "bnf": [
             [
-                "transactionCharacteristic",
-                "transactionCharacteristic_zero_or_more"
-            ],
-            [
-                "transactionCharacteristic"
+                "transactionCharacteristicList"
             ],
             [
                 "\u03b5"
@@ -10066,7 +10062,7 @@
             [
                 "START_SYMBOL",
                 "TRANSACTION_SYMBOL",
-                "transactionCharacteristic_zero_or_more"
+                "transactionCharacteristicList_zero_or_one"
             ],
             [
                 "COMMIT_SYMBOL",
@@ -10156,6 +10152,54 @@
             [
                 "BEGIN_SYMBOL",
                 "WORK_SYMBOL_zero_or_one"
+            ]
+        ]
+    },
+    {
+        "name": "%transactionCharacteristicList01_zero_or_more",
+        "bnf": [
+            [
+                "%transactionCharacteristicList01",
+                "%transactionCharacteristicList01_zero_or_more"
+            ],
+            [
+                "%transactionCharacteristicList01"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "transactionCharacteristicList",
+        "bnf": [
+            [
+                "transactionCharacteristic",
+                "%transactionCharacteristicList01_zero_or_more"
+            ]
+        ]
+    },
+    {
+        "name": "%transactionCharacteristicList01_zero_or_more",
+        "bnf": [
+            [
+                "%transactionCharacteristicList01",
+                "%transactionCharacteristicList01_zero_or_more"
+            ],
+            [
+                "%transactionCharacteristicList01"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%transactionCharacteristicList01",
+        "bnf": [
+            [
+                "COMMA_SYMBOL",
+                "transactionCharacteristic"
             ]
         ]
     },

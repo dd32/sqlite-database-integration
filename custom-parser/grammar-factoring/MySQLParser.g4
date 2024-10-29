@@ -1581,7 +1581,8 @@ transactionOrLockingStatement:
 ;
 
 transactionStatement:
-    START_SYMBOL TRANSACTION_SYMBOL transactionCharacteristic*
+    /* @FIX: Use "transactionCharacteristicList" instead of "transactionCharacteristic". */
+    START_SYMBOL TRANSACTION_SYMBOL transactionCharacteristicList?
     | COMMIT_SYMBOL WORK_SYMBOL? (AND_SYMBOL NO_SYMBOL? CHAIN_SYMBOL)? (
         NO_SYMBOL? RELEASE_SYMBOL
     )?
@@ -1591,6 +1592,14 @@ transactionStatement:
 // BEGIN WORK is separated from transactional statements as it must not appear as part of a stored program.
 beginWork:
     BEGIN_SYMBOL WORK_SYMBOL?
+;
+
+/*
+ * @FIX:
+ * Add "transactionCharacteristicList" to fix support for transaction with multiple characteristics.
+ */
+transactionCharacteristicList:
+    transactionCharacteristic (COMMA_SYMBOL transactionCharacteristic)*
 ;
 
 transactionCharacteristic:
