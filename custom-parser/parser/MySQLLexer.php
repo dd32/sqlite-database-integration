@@ -2116,7 +2116,9 @@ class MySQLLexer {
 			$this->consume();
 			$this->type = self::PLUS_OPERATOR;
 		} elseif ($la === '-') {
-			if ($la2 === '>') {
+			if ($la2 === '-' && $this->isWhitespace($this->LA(3))) {
+				$this->LINE_COMMENT();
+			} elseif ($la2 === '>') {
 				if ($this->LA(3) === '>') {
 					if ($this->serverVersion >= 50713) {
 						$this->consume(); // Consume the '-'.
@@ -2237,9 +2239,7 @@ class MySQLLexer {
 				$this->type = self::INVALID_INPUT;
 			}
 		} elseif ($la === '#') {
-			$this->POUND_COMMENT();
-		} elseif ($la === '-' && $la2 === '-') {
-			$this->DASHDASH_COMMENT();
+			$this->LINE_COMMENT();
 		} elseif ($this->isWhitespace($la)) {
 			while ($this->isWhitespace($this->c)) {
 				$this->consume();
@@ -2544,37 +2544,11 @@ class MySQLLexer {
         $this->type = self::DECIMAL_NUMBER;
     }
 
-    protected function POUND_COMMENT()
+    protected function LINE_COMMENT()
     {
-        $this->consume();
-
-        while ($this->c !== null) {
-            if ($this->c === "\n" || $this->c === "\r") {
-                break;
-            }
+        while ($this->c !== null && $this->c !== "\n" && $this->c !== "\r") {
             $this->consume();
         }
-
-        $this->type = self::COMMENT;
-        $this->channel = self::CHANNEL_HIDDEN;
-    }
-
-    protected function DASHDASH_COMMENT()
-    {
-        $this->consume(); // Consume the '-'.
-        $this->consume(); // Consume the '-'.
-
-        while ($this->isWhitespace($this->c)) {
-            $this->consume();
-        }
-
-        while ($this->c !== null) {
-            if ($this->c === "\n" || $this->c === "\r") {
-                break;
-            }
-            $this->consume();
-        }
-
         $this->type = self::COMMENT;
         $this->channel = self::CHANNEL_HIDDEN;
     }
