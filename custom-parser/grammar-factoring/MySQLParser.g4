@@ -2595,10 +2595,14 @@ logType:
     | SLOW_SYMBOL
 ;
 
+/*
+ * @FIX:
+ * Replace "identifierList" with "tableRefList" to correctly support qualified identifiers.
+ */
 flushTables:
     (TABLES_SYMBOL | TABLE_SYMBOL) (
         WITH_SYMBOL READ_SYMBOL LOCK_SYMBOL
-        | identifierList flushTablesOptions?
+        | tableRefList flushTablesOptions?
     )?
 ;
 

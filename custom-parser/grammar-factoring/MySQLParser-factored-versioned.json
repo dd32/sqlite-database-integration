@@ -17908,7 +17908,7 @@
                 "LOCK_SYMBOL"
             ],
             [
-                "identifierList",
+                "tableRefList",
                 "flushTablesOptions_zero_or_one"
             ]
         ]
