@@ -2169,8 +2169,9 @@ roleOrPrivilegesList:
 
 roleOrPrivilege:
     {serverVersion > 80000}? (
-        roleIdentifierOrText columnInternalRefList?
-        | roleIdentifierOrText (AT_TEXT_SUFFIX | AT_SIGN_SYMBOL textOrIdentifier)
+        /* @FIX: Reorder branches to solve conflict between them. */
+        roleIdentifierOrText (AT_TEXT_SUFFIX | AT_SIGN_SYMBOL textOrIdentifier)
+        | roleIdentifierOrText columnInternalRefList?
     )
     | (SELECT_SYMBOL | INSERT_SYMBOL | UPDATE_SYMBOL | REFERENCES_SYMBOL) columnInternalRefList?
     | (

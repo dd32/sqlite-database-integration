@@ -14707,7 +14707,7 @@
         ]
     },
     {
-        "name": "%roleOrPrivilege00011",
+        "name": "%roleOrPrivilege00001",
         "bnf": [
             [
                 "AT_TEXT_SUFFIX"
@@ -14734,11 +14734,11 @@
         "bnf": [
             [
                 "roleIdentifierOrText",
-                "columnInternalRefList_zero_or_one"
+                "%roleOrPrivilege00001"
             ],
             [
                 "roleIdentifierOrText",
-                "%roleOrPrivilege00011"
+                "columnInternalRefList_zero_or_one"
             ]
         ]
     },
