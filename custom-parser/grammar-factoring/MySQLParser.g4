@@ -2369,8 +2369,17 @@ startOptionValueList:
     | {serverVersion >= 80018}? PASSWORD_SYMBOL (FOR_SYMBOL user)? TO_SYMBOL RANDOM_SYMBOL replacePassword? retainCurrentPassword?
 ;
 
-transactionCharacteristics:
+/*transactionCharacteristics:
     transactionAccessMode isolationLevel?
+    | isolationLevel (COMMA_SYMBOL transactionAccessMode)?
+;*/
+
+/*
+ * FIX:
+ * Fix "transactionCharacteristics" to include COMMA_SYMBOL in both branches.
+ */
+transactionCharacteristics:
+    transactionAccessMode (COMMA_SYMBOL isolationLevel)?
     | isolationLevel (COMMA_SYMBOL transactionAccessMode)?
 ;
 

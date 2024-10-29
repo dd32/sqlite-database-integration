@@ -16002,10 +16002,10 @@
         ]
     },
     {
-        "name": "isolationLevel_zero_or_one",
+        "name": "%transactionCharacteristics01_zero_or_one",
         "bnf": [
             [
-                "isolationLevel"
+                "%transactionCharacteristics01"
             ],
             [
                 "\u03b5"
@@ -16028,11 +16028,31 @@
         "bnf": [
             [
                 "transactionAccessMode",
-                "isolationLevel_zero_or_one"
+                "%transactionCharacteristics01_zero_or_one"
             ],
             [
                 "isolationLevel",
                 "%transactionCharacteristics11_zero_or_one"
+            ]
+        ]
+    },
+    {
+        "name": "%transactionCharacteristics01_zero_or_one",
+        "bnf": [
+            [
+                "%transactionCharacteristics01"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%transactionCharacteristics01",
+        "bnf": [
+            [
+                "COMMA_SYMBOL",
+                "isolationLevel"
             ]
         ]
     },
