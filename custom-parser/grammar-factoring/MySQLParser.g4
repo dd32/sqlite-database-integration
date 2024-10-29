@@ -4687,6 +4687,7 @@ identifierKeywordsUnambiguous:
         | ALWAYS_SYMBOL
         | ANY_SYMBOL
         | AT_SYMBOL
+        | ATTRIBUTE_SYMBOL
         | AUTOEXTEND_SIZE_SYMBOL
         | AUTO_INCREMENT_SYMBOL
         | AVG_ROW_LENGTH_SYMBOL
