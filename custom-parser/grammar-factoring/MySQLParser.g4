@@ -2250,12 +2250,23 @@ repairType:
 installUninstallStatment:
     // COMPONENT_SYMBOL is conditionally set in the lexer.
     action = INSTALL_SYMBOL type = PLUGIN_SYMBOL identifier SONAME_SYMBOL textStringLiteral
-    | action = INSTALL_SYMBOL type = COMPONENT_SYMBOL textStringLiteralList
+    /* @FIX: Add missing "INSTALL COMPONENT" statement "SET ..." suffix. */
+    | action = INSTALL_SYMBOL type = COMPONENT_SYMBOL textStringLiteralList (SET_SYMBOL installSetValueList)?
     | action = UNINSTALL_SYMBOL type = PLUGIN_SYMBOL pluginRef
     | action = UNINSTALL_SYMBOL type = COMPONENT_SYMBOL componentRef (
         COMMA_SYMBOL componentRef
     )*
 ;
+
+/*
+ * @FIX:
+ * Add missing "INSTALL COMPONENT" statement "SET ..." suffix.
+ */
+installOptionType: GLOBAL_SYMBOL | PERSIST_SYMBOL;
+
+installSetValue: installOptionType? internalVariableName equal (ON_SYMBOL | expr);
+
+installSetValueList: installSetValue (COMMA_SYMBOL installSetValue)*;
 
 //----------------------------------------------------------------------------------------------------------------------
 

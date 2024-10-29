@@ -15019,6 +15019,17 @@
         ]
     },
     {
+        "name": "%installUninstallStatment13_zero_or_one",
+        "bnf": [
+            [
+                "%installUninstallStatment13"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
         "name": "%installUninstallStatment33_zero_or_more",
         "bnf": [
             [
@@ -15046,7 +15057,8 @@
             [
                 "INSTALL_SYMBOL",
                 "COMPONENT_SYMBOL",
-                "textStringLiteralList"
+                "textStringLiteralList",
+                "%installUninstallStatment13_zero_or_one"
             ],
             [
                 "UNINSTALL_SYMBOL",
@@ -15058,6 +15070,26 @@
                 "COMPONENT_SYMBOL",
                 "componentRef",
                 "%installUninstallStatment33_zero_or_more"
+            ]
+        ]
+    },
+    {
+        "name": "%installUninstallStatment13_zero_or_one",
+        "bnf": [
+            [
+                "%installUninstallStatment13"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%installUninstallStatment13",
+        "bnf": [
+            [
+                "SET_SYMBOL",
+                "installSetValueList"
             ]
         ]
     },
@@ -15082,6 +15114,98 @@
             [
                 "COMMA_SYMBOL",
                 "componentRef"
+            ]
+        ]
+    },
+    {
+        "name": "installOptionType",
+        "bnf": [
+            [
+                "GLOBAL_SYMBOL"
+            ],
+            [
+                "PERSIST_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "installOptionType_zero_or_one",
+        "bnf": [
+            [
+                "installOptionType"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "installSetValue",
+        "bnf": [
+            [
+                "installOptionType_zero_or_one",
+                "internalVariableName",
+                "equal",
+                "%installSetValue03"
+            ]
+        ]
+    },
+    {
+        "name": "%installSetValue03",
+        "bnf": [
+            [
+                "ON_SYMBOL"
+            ],
+            [
+                "expr"
+            ]
+        ]
+    },
+    {
+        "name": "%installSetValueList01_zero_or_more",
+        "bnf": [
+            [
+                "%installSetValueList01",
+                "%installSetValueList01_zero_or_more"
+            ],
+            [
+                "%installSetValueList01"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "installSetValueList",
+        "bnf": [
+            [
+                "installSetValue",
+                "%installSetValueList01_zero_or_more"
+            ]
+        ]
+    },
+    {
+        "name": "%installSetValueList01_zero_or_more",
+        "bnf": [
+            [
+                "%installSetValueList01",
+                "%installSetValueList01_zero_or_more"
+            ],
+            [
+                "%installSetValueList01"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%installSetValueList01",
+        "bnf": [
+            [
+                "COMMA_SYMBOL",
+                "installSetValue"
             ]
         ]
     },
