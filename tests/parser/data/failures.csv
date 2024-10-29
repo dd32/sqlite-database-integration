@@ -59,10 +59,6 @@ on update no action,
 foreign key (a,b) references t3 (c,d) on update cascade,
 foreign key (a,b) references t3 (c,d) on delete set default,
 foreign key (a,b) references t3 (c,d) on update set null) engine=myisam"
-"SELECT cast(TIMESTAMP'2019-10-10 10:11:12' AT TIME ZONE 'UTC' AS DATETIME)"
-"SELECT cast(TIMESTAMP'2019-10-10 10:11:12' AT TIME ZONE '+00:00' AS DATETIME)"
-"SELECT cast(TIMESTAMP'2019-10-10 10:11:12+00:00' AT TIME ZONE '+00:00' AS DATETIME)"
-"SELECT cast( a AT TIME ZONE '+00:00' AS DATETIME ) FROM t1"
 "select hex(weight_string('aa' as binary(3)))"
 "SELECT HEX(WEIGHT_STRING('ab' AS BINARY(1000000)))"
 "CREATE VIEW v5 AS SELECT WEIGHT_STRING(a AS BINARY(2)) AS b FROM t1"
@@ -81,7 +77,6 @@ foreign key (a,b) references t3 (c,d) on update set null) engine=myisam"
 "SELECT 'a%' NOT LIKE 'a!%' ESCAPE '!', 'a%' NOT LIKE 'a!' || '%' ESCAPE '!'"
 "SELECT 'a%' LIKE 'a!%' ESCAPE '$', 'a%' LIKE 'a!' || '%' ESCAPE '$'"
 "SELECT 'a%' NOT LIKE 'a!%' ESCAPE '$', 'a%' NOT LIKE 'a!' || '%' ESCAPE '$'"
-"SELECT cast( NULL AT TIME ZONE 'UTC' AS DATETIME )"
 "RESET PERSIST default.key_buffer_size"
 "query_attributes a b"
 "query_attributes a b c d"

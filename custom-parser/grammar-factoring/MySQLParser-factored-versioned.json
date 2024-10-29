@@ -19458,14 +19458,14 @@
         ]
     },
     {
-        "name": "%%simpleExpr_factored172_one_or_more",
+        "name": "%%simpleExpr_factored182_one_or_more",
         "bnf": [
             [
-                "%%simpleExpr_factored172",
-                "%%simpleExpr_factored172_one_or_more"
+                "%%simpleExpr_factored182",
+                "%%simpleExpr_factored182_one_or_more"
             ],
             [
-                "%%simpleExpr_factored172"
+                "%%simpleExpr_factored182"
             ]
         ]
     },
@@ -19550,6 +19550,9 @@
                 "simpleExpr"
             ],
             [
+                "%%simpleExpr_factored160"
+            ],
+            [
                 "CAST_SYMBOL",
                 "OPEN_PAR_SYMBOL",
                 "expr",
@@ -19561,7 +19564,7 @@
             [
                 "CASE_SYMBOL",
                 "expr_zero_or_one",
-                "%%simpleExpr_factored172_one_or_more",
+                "%%simpleExpr_factored182_one_or_more",
                 "elseExpression_zero_or_one",
                 "END_SYMBOL"
             ],
@@ -19655,19 +19658,69 @@
         ]
     },
     {
-        "name": "%%simpleExpr_factored172_one_or_more",
+        "name": "INTERVAL_SYMBOL_zero_or_one",
         "bnf": [
             [
-                "%%simpleExpr_factored172",
-                "%%simpleExpr_factored172_one_or_more"
+                "INTERVAL_SYMBOL"
             ],
             [
-                "%%simpleExpr_factored172"
+                "\u03b5"
             ]
         ]
     },
     {
-        "name": "%%simpleExpr_factored172",
+        "name": "typeDatetimePrecision_zero_or_one",
+        "bnf": [
+            [
+                "typeDatetimePrecision"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80022",
+        "name": "%%simpleExpr_factored16000",
+        "bnf": [
+            [
+                "CAST_SYMBOL",
+                "OPEN_PAR_SYMBOL",
+                "expr",
+                "AT_SYMBOL",
+                "TIME_SYMBOL",
+                "ZONE_SYMBOL",
+                "INTERVAL_SYMBOL_zero_or_one",
+                "textStringLiteral",
+                "AS_SYMBOL",
+                "DATETIME_SYMBOL",
+                "typeDatetimePrecision_zero_or_one",
+                "CLOSE_PAR_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%%simpleExpr_factored160",
+        "bnf": [
+            [
+                "%%simpleExpr_factored16000"
+            ]
+        ]
+    },
+    {
+        "name": "%%simpleExpr_factored182_one_or_more",
+        "bnf": [
+            [
+                "%%simpleExpr_factored182",
+                "%%simpleExpr_factored182_one_or_more"
+            ],
+            [
+                "%%simpleExpr_factored182"
+            ]
+        ]
+    },
+    {
+        "name": "%%simpleExpr_factored182",
         "bnf": [
             [
                 "whenExpression",
@@ -31752,6 +31805,9 @@
             ],
             [
                 "YEAR_SYMBOL"
+            ],
+            [
+                "ZONE_SYMBOL"
             ]
         ]
     },

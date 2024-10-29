@@ -924,6 +924,7 @@ class MySQLLexer {
 	const GET_SOURCE_PUBLIC_KEY_SYMBOL = 840;
 	const GTID_ONLY_SYMBOL = 841;
 	const ASSIGN_GTIDS_TO_ANONYMOUS_TRANSACTIONS_SYMBOL = 842;
+	const ZONE_SYMBOL = 843;
 
 	// Comments
 	const COMMENT = 900;
@@ -1732,6 +1733,7 @@ class MySQLLexer {
 		'VCPU' => self::VCPU_SYMBOL,
 		'VISIBLE' => self::VISIBLE_SYMBOL,
 		'WINDOW' => self::WINDOW_SYMBOL,
+		'ZONE' => self::ZONE_SYMBOL,
 	];
 
 	/**
@@ -2006,6 +2008,7 @@ class MySQLLexer {
 		self::VCPU_SYMBOL => 80000,
 		self::VISIBLE_SYMBOL => 80000,
 		self::WINDOW_SYMBOL => 80000,
+		self::ZONE_SYMBOL => 80022,
 	];
 
 	/**
@@ -2089,7 +2092,7 @@ class MySQLLexer {
 
     public function getServerVersion()
     {
-        return $this->serverVersion;        
+        return $this->serverVersion;
     }
 
     public static function getTokenId(string $tokenName): int
@@ -2756,7 +2759,7 @@ class MySQLToken
 
     public function getChannel()
     {
-        return $this->channel;        
+        return $this->channel;
     }
 
     public function __toString()
@@ -2774,7 +2777,7 @@ class MySQLToken
             return substr($this->text, 1, -1);
         } else {
             return $this->text;
-        }  
+        }
     }
 
 }

@@ -2931,6 +2931,12 @@ simpleExpr: %simpleExpr_collate (CONCAT_PIPES_SYMBOL %simpleExpr_collate)*;
     | OPEN_CURLY_SYMBOL identifier expr CLOSE_CURLY_SYMBOL                                               # simpleExprOdbc
     | MATCH_SYMBOL identListArg AGAINST_SYMBOL OPEN_PAR_SYMBOL bitExpr fulltextOptions? CLOSE_PAR_SYMBOL # simpleExprMatch
     | BINARY_SYMBOL simpleExpr                                                                           # simpleExprBinary
+    /* @FIX: Add support for CAST(... AT TIME ZONE ... AS DATETIME ...). */
+    | ({serverVersion >= 80022}?
+        CAST_SYMBOL OPEN_PAR_SYMBOL expr
+        AT_SYMBOL TIME_SYMBOL ZONE_SYMBOL INTERVAL_SYMBOL? textStringLiteral
+        AS_SYMBOL DATETIME_SYMBOL typeDatetimePrecision? CLOSE_PAR_SYMBOL
+    )
     | CAST_SYMBOL OPEN_PAR_SYMBOL expr AS_SYMBOL castType arrayCast? CLOSE_PAR_SYMBOL                    # simpleExprCast
     | CASE_SYMBOL expr? (whenExpression thenExpression)+ elseExpression? END_SYMBOL                      # simpleExprCase
     | CONVERT_SYMBOL OPEN_PAR_SYMBOL expr COMMA_SYMBOL castType CLOSE_PAR_SYMBOL                         # simpleExprConvert
@@ -5108,6 +5114,7 @@ identifierKeywordsUnambiguous:
         | XID_SYMBOL
         | XML_SYMBOL
         | YEAR_SYMBOL
+        | ZONE_SYMBOL
     )
     | {serverVersion >= 80019}? (
         ARRAY_SYMBOL
