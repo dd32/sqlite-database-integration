@@ -30073,15 +30073,15 @@
         "bnf": [
             [
                 "DATE_SYMBOL",
-                "SINGLE_QUOTED_TEXT"
+                "textStringLiteral"
             ],
             [
                 "TIME_SYMBOL",
-                "SINGLE_QUOTED_TEXT"
+                "textStringLiteral"
             ],
             [
                 "TIMESTAMP_SYMBOL",
-                "SINGLE_QUOTED_TEXT"
+                "textStringLiteral"
             ]
         ]
     },

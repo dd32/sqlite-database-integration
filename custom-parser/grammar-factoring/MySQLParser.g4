@@ -4502,10 +4502,20 @@ nullLiteral: // In sql_yacc.cc both 'NULL' and '\N' are mapped to NULL_SYM (whic
     | NULL2_SYMBOL
 ;
 
-temporalLiteral:
+/*temporalLiteral:
     DATE_SYMBOL SINGLE_QUOTED_TEXT
     | TIME_SYMBOL SINGLE_QUOTED_TEXT
     | TIMESTAMP_SYMBOL SINGLE_QUOTED_TEXT
+;*/
+
+/*
+ * @FIX:
+ * Replace "SINGLE_QUOTED_TEXT" with "textStringLiteral" to support both ' and ", as per SQL_MODE.
+ */
+temporalLiteral:
+    DATE_SYMBOL textStringLiteral
+    | TIME_SYMBOL textStringLiteral
+    | TIMESTAMP_SYMBOL textStringLiteral
 ;
 
 floatOptions:
