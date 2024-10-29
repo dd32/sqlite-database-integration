@@ -15876,10 +15876,10 @@
         ]
     },
     {
-        "name": "%startOptionValueList31_zero_or_one",
+        "name": "%startOptionValueList11_zero_or_one",
         "bnf": [
             [
-                "%startOptionValueList31"
+                "%startOptionValueList11"
             ],
             [
                 "\u03b5"
@@ -15890,33 +15890,33 @@
         "name": "startOptionValueList",
         "bnf": [
             [
-                "optionValueNoOptionType",
-                "optionValueListContinued"
-            ],
-            [
                 "TRANSACTION_SYMBOL",
                 "transactionCharacteristics"
             ],
             [
+                "PASSWORD_SYMBOL",
+                "%startOptionValueList11_zero_or_one",
+                "equal",
+                "%startOptionValueList13"
+            ],
+            [
+                "%startOptionValueList20"
+            ],
+            [
+                "optionValueNoOptionType",
+                "optionValueListContinued"
+            ],
+            [
                 "optionType",
                 "startOptionValueListFollowingOptionType"
-            ],
-            [
-                "PASSWORD_SYMBOL",
-                "%startOptionValueList31_zero_or_one",
-                "equal",
-                "%startOptionValueList33"
-            ],
-            [
-                "%startOptionValueList40"
             ]
         ]
     },
     {
-        "name": "%startOptionValueList31_zero_or_one",
+        "name": "%startOptionValueList11_zero_or_one",
         "bnf": [
             [
-                "%startOptionValueList31"
+                "%startOptionValueList11"
             ],
             [
                 "\u03b5"
@@ -15924,7 +15924,7 @@
         ]
     },
     {
-        "name": "%startOptionValueList31",
+        "name": "%startOptionValueList11",
         "bnf": [
             [
                 "FOR_SYMBOL",
@@ -15934,7 +15934,7 @@
     },
     {
         "versions": "serverVersion < 50706",
-        "name": "%startOptionValueList3320",
+        "name": "%startOptionValueList1320",
         "bnf": [
             [
                 "OLD_PASSWORD_SYMBOL",
@@ -15946,7 +15946,7 @@
     },
     {
         "versions": "serverVersion < 80014",
-        "name": "%startOptionValueList3330",
+        "name": "%startOptionValueList1330",
         "bnf": [
             [
                 "PASSWORD_SYMBOL",
@@ -16001,7 +16001,7 @@
         ]
     },
     {
-        "name": "%startOptionValueList33",
+        "name": "%startOptionValueList13",
         "bnf": [
             [
                 "textString",
@@ -16014,18 +16014,18 @@
                 "retainCurrentPassword_zero_or_one"
             ],
             [
-                "%startOptionValueList3320"
+                "%startOptionValueList1320"
             ],
             [
-                "%startOptionValueList3330"
+                "%startOptionValueList1330"
             ]
         ]
     },
     {
-        "name": "%startOptionValueList401_zero_or_one",
+        "name": "%startOptionValueList201_zero_or_one",
         "bnf": [
             [
-                "%startOptionValueList401"
+                "%startOptionValueList201"
             ],
             [
                 "\u03b5"
@@ -16033,7 +16033,7 @@
         ]
     },
     {
-        "name": "%startOptionValueList401",
+        "name": "%startOptionValueList201",
         "bnf": [
             [
                 "FOR_SYMBOL",
@@ -16042,10 +16042,10 @@
         ]
     },
     {
-        "name": "%startOptionValueList401_zero_or_one",
+        "name": "%startOptionValueList201_zero_or_one",
         "bnf": [
             [
-                "%startOptionValueList401"
+                "%startOptionValueList201"
             ],
             [
                 "\u03b5"
@@ -16076,11 +16076,11 @@
     },
     {
         "versions": "serverVersion >= 80018",
-        "name": "%startOptionValueList40",
+        "name": "%startOptionValueList20",
         "bnf": [
             [
                 "PASSWORD_SYMBOL",
-                "%startOptionValueList401_zero_or_one",
+                "%startOptionValueList201_zero_or_one",
                 "TO_SYMBOL",
                 "RANDOM_SYMBOL",
                 "replacePassword_zero_or_one",

@@ -72,9 +72,6 @@ foreign key (a,b) references t3 (c,d) on update set null) engine=myisam"
 "query_attributes 'a' ""b c"""
 "query_attributes '' 'a'"
 "query_attributes 'a' 'b c'"
-"SET PASSWORD = '' REPLACE ''"
-"SET PASSWORD='789' REPLACE '456'"
-"SET PASSWORD='azundris2' REPLACE 'azundris2'"
 "ALTER SCHEMA s1 READ ONLY DEFAULT"
 "create procedure mysqltest1.p1()
 begin

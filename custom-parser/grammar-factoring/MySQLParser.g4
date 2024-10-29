@@ -2369,9 +2369,9 @@ setStatement:
 ;
 
 startOptionValueList:
-    optionValueNoOptionType optionValueListContinued
-    | TRANSACTION_SYMBOL transactionCharacteristics
-    | optionType startOptionValueListFollowingOptionType
+    /* optionValueNoOptionType optionValueListContinued */
+    TRANSACTION_SYMBOL transactionCharacteristics
+    /*| optionType startOptionValueListFollowingOptionType */
     | PASSWORD_SYMBOL (FOR_SYMBOL user)? equal (
         textString replacePassword? retainCurrentPassword?
         | textString replacePassword? retainCurrentPassword?
@@ -2379,6 +2379,9 @@ startOptionValueList:
         | {serverVersion < 80014}? PASSWORD_SYMBOL OPEN_PAR_SYMBOL textString CLOSE_PAR_SYMBOL
     )
     | {serverVersion >= 80018}? PASSWORD_SYMBOL (FOR_SYMBOL user)? TO_SYMBOL RANDOM_SYMBOL replacePassword? retainCurrentPassword?
+    /* FIX: Move these rules after the "PASSWORD_SYMBOL" rules to solve conflicts. */
+    | optionValueNoOptionType optionValueListContinued
+    | optionType startOptionValueListFollowingOptionType
 ;
 
 /*transactionCharacteristics:
