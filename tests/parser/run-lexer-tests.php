@@ -53,16 +53,35 @@ $tests = [
 	// DECIMAL numbers vs. identifiers
 	'123.456' => ['DECIMAL_NUMBER', 'EOF'],
 	'.123' => ['DECIMAL_NUMBER', 'EOF'],
+	'123.' => ['DECIMAL_NUMBER', 'EOF'],
 	'123.456abc' => ['DECIMAL_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
 	'.123abc' => ['DECIMAL_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
+	'123.abc' => ['DECIMAL_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
 
 	// FLOAT numbers vs. identifiers
 	'1e10' => ['FLOAT_NUMBER', 'EOF'],
 	'1e+10' => ['FLOAT_NUMBER', 'EOF'],
 	'1e-10' => ['FLOAT_NUMBER', 'EOF'],
+	'.1e10' => ['FLOAT_NUMBER', 'EOF'],
+	'.1e+10' => ['FLOAT_NUMBER', 'EOF'],
+	'.1e-10' => ['FLOAT_NUMBER', 'EOF'],
+	'1.1e10' => ['FLOAT_NUMBER', 'EOF'],
+	'1.1e-10' => ['FLOAT_NUMBER', 'EOF'],
+	'1.1e+10' => ['FLOAT_NUMBER', 'EOF'],
 	'1e10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier (this differs from INT/BIN/HEX numbers)
 	'1e+10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
 	'1e-10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
+	'.1e10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
+	'.1e+10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
+	'.1e-10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
+	'1.1e10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
+	'1.1e+10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
+	'1.1e-10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
+
+	// Non-numbers
+	'.SELECT' => ['DOT_SYMBOL', 'IDENTIFIER', 'EOF'], // not decimal or float
+	'1+e10' => ['INT_NUMBER', 'PLUS_OPERATOR', 'IDENTIFIER', 'EOF'], // not float
+	'1-e10' => ['INT_NUMBER', 'MINUS_OPERATOR', 'IDENTIFIER', 'EOF'], // not float
 ];
 
 $failures = 0;

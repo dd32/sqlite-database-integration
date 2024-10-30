@@ -29,6 +29,3 @@ alter database character set koi8r;
 end"
 "create temporary table tg (i int not null) engine=merge union=()"
 "load data infile '../../std_data/words.dat' into table t1 (a) set b:= f1()"
-"SELECT 10,10.0,10.,.1e+2,100.0e-1"
-"create table table_28127_a(0b02 int)"
-"create table table_28127_b(0b2 int)"

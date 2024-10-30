@@ -31,7 +31,7 @@ class MySQLLexer {
 	 *   1. Allowed characters are ASCII a-z, A-Z, 0-9, $, _ and Unicode \x{0080}-\x{ffff}.
 	 *   2. Unquoted identifiers may begin with a digit but may not consist solely of digits.
 	 */
-	const PATTERN_UNQUOTED_IDENTIFIER = '(?=\D)[\w_$\x{80}-\x{ffff}]+';
+	const PATTERN_UNQUOTED_IDENTIFIER = '[a-zA-Z0-9_$\x{80}-\x{ffff}]*[a-zA-Z_$\x{80}-\x{ffff}][a-zA-Z0-9_$\x{80}-\x{ffff}]*';
 
 	/**
 	 * Unquoted user-defined variables:
@@ -41,7 +41,7 @@ class MySQLLexer {
 	 *   1. Starts with a '@'.
 	 *   2. Allowed following characters are ASCII a-z, A-Z, 0-9, ., $, _.
 	 */
-	const PATTER_UNQUOTED_USER_VARIABLE = '@[\w\d$.]+';
+	const PATTER_UNQUOTED_USER_VARIABLE = '@[a-zA-Z0-9_$.]+';
 
     /**
      * Quoted literals and identifiers:
@@ -2492,41 +2492,39 @@ class MySQLLexer {
 
     protected function NUMBER()
     {
-        if (($this->c === '0' && $this->n === 'x') || (strtolower($this->c) === 'x' && $this->n === "'")) {
-            $this->HEX_NUMBER();
-        } elseif (($this->c === '0' && $this->n === 'b') || (strtolower($this->c) === 'b' && $this->n === "'")) {
-            $this->BIN_NUMBER();
-        } elseif ($this->c === '.' && $this->isDigit($this->n)) {
-            $this->DECIMAL_NUMBER();
+		$start_position = $this->position;
+
+        if ($this->c === '0' && $this->n === 'x') {
+			$this->HEX_NUMBER(); // 0x...
+		} elseif (($this->c === 'x' || $this->c === 'X') && $this->n === "'") {
+			$this->HEX_NUMBER(); // x'...' or X'...'
+        } elseif ($this->c === '0' && $this->n === 'b') {
+			$this->BIN_NUMBER(); // 0b...
+		} elseif (($this->c === 'b' || $this->c === 'B') && $this->n === "'") {
+			$this->BIN_NUMBER(); // b'...' or B'...'
         } else {
+			// Here, we have a sequence starting with N or .N, where N is a digit.
+
+			// 1. Try integer first.
             $this->INT_NUMBER();
 
+			// 2. In case of N. or .N, it's a decimal or float number.
             if ($this->c === '.') {
-                $this->consume();
+				$this->consume();
+				$this->type = self::DECIMAL_NUMBER;
+				while ($this->isDigit($this->c)) {
+					$this->consume();
+				}
+            }
 
-                if ($this->isDigit($this->c)) {
-                    while ($this->isDigit($this->c)) {
-                        $this->consume();
-                    }
-
-                    if ($this->c === 'e' || $this->c === 'E') {
-                        $this->consume();
-                        if ($this->c === '+' || $this->c === '-') {
-                            $this->consume();
-                        }
-                        while ($this->isDigit($this->c)) {
-                            $this->consume();
-                        }
-                        $this->type = self::FLOAT_NUMBER;
-                    } else {
-                        $this->type = self::DECIMAL_NUMBER;
-                    }
-                }
-            } elseif (($this->c === 'e' || $this->c === 'E') && ($this->n === '+' || $this->n === '-' || $this->isDigit($this->n))) {
-                $this->consume();
-                if ($this->c === '+' || $this->c === '-') {
-                    $this->consume();
-                }
+			// 3. When exponent is present, it's a float number.
+			$has_exponent = ($this->c === 'e' || $this->c === 'E') && (
+				$this->isDigit($this->n)
+				|| (($this->n === '+' || $this->n === '-') && $this->isDigit($this->LA(3)))
+			);
+			if ($has_exponent) {
+                $this->consume(); // Consume the 'e' or 'E'.
+				$this->consume(); // Consume the '+', '-', or digit.
                 while ($this->isDigit($this->c)) {
                     $this->consume();
                 }
@@ -2541,12 +2539,17 @@ class MySQLLexer {
             $this->type === self::INT_NUMBER
             || ($this->text[0] === '0' && ($this->text[1] === 'b' || $this->text[1] === 'x'));
 
-        if ($possibleIdentifierPrefix && preg_match('/\G' . self::PATTERN_UNQUOTED_IDENTIFIER . '/u', $this->input, $matches, 0, $this->position)) {
-            $this->text .= $matches[0];
-            $this->position += strlen($matches[0]);
-            $this->c = $this->input[$this->position] ?? null;
-            $this->n = $this->input[$this->position + 1] ?? null;
-            $this->type = self::IDENTIFIER;
+        if ($possibleIdentifierPrefix && preg_match('/\G' . self::PATTERN_UNQUOTED_IDENTIFIER . '/u', $this->input, $matches, 0, $start_position)) {
+			$end_position = $start_position + strlen($matches[0]);
+
+			// When matched more than the number, it's an identifier.
+			if ($end_position > $this->position) {
+				$this->text = $matches[0];
+				$this->position = $end_position;
+				$this->c = $this->input[$this->position] ?? null;
+				$this->n = $this->input[$this->position + 1] ?? null;
+				$this->type = self::IDENTIFIER;
+			}
         }
     }
 
