@@ -3145,11 +3145,14 @@ runtimeFunctionCall:
     | name = ROW_COUNT_SYMBOL parentheses
     | name = TRUNCATE_SYMBOL OPEN_PAR_SYMBOL expr COMMA_SYMBOL expr CLOSE_PAR_SYMBOL
     | name = WEEK_SYMBOL OPEN_PAR_SYMBOL expr (COMMA_SYMBOL expr)? CLOSE_PAR_SYMBOL
+    | name = WEIGHT_STRING_SYMBOL OPEN_PAR_SYMBOL expr AS_SYMBOL CHAR_SYMBOL CLOSE_PAR_SYMBOL
     | name = WEIGHT_STRING_SYMBOL OPEN_PAR_SYMBOL expr (
-        (AS_SYMBOL CHAR_SYMBOL wsNumCodepoints)? (
+        /* @FIX: Move "AS BINARY(...)" before "AS CHAR(...)" to solve conflict. */ 
+        AS_SYMBOL BINARY_SYMBOL wsNumCodepoints
+        | (AS_SYMBOL CHAR_SYMBOL wsNumCodepoints)? (
             {serverVersion < 80000}? weightStringLevels
         )?
-        | AS_SYMBOL BINARY_SYMBOL wsNumCodepoints
+        /*| AS_SYMBOL BINARY_SYMBOL wsNumCodepoints */
         | COMMA_SYMBOL ulong_number COMMA_SYMBOL ulong_number COMMA_SYMBOL ulong_number
     ) CLOSE_PAR_SYMBOL
     | geometryFunction

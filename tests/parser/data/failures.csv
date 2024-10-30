@@ -48,12 +48,6 @@ on update no action,
 foreign key (a,b) references t3 (c,d) on update cascade,
 foreign key (a,b) references t3 (c,d) on delete set default,
 foreign key (a,b) references t3 (c,d) on update set null) engine=myisam"
-"select hex(weight_string('aa' as binary(3)))"
-"SELECT HEX(WEIGHT_STRING('ab' AS BINARY(1000000)))"
-"CREATE VIEW v5 AS SELECT WEIGHT_STRING(a AS BINARY(2)) AS b FROM t1"
-"CREATE VIEW v6 AS SELECT WEIGHT_STRING(a AS BINARY(6)) AS b FROM t1"
-"SELECT HEX(WEIGHT_STRING(a AS BINARY(2))) FROM t1"
-"SELECT HEX(WEIGHT_STRING(a AS BINARY(6))) FROM t1"
 "CREATE TABLE t1 (g GEOMCOLLECTION)"
 "alter user mysqltest_7@ identified by 'systpass'"
 "CREATE TEMPORARY TABLE t6(a INT) ENGINE = MERGE UNION = ()"

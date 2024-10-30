@@ -21497,7 +21497,15 @@
                 "WEIGHT_STRING_SYMBOL",
                 "OPEN_PAR_SYMBOL",
                 "expr",
-                "%runtimeFunctionCall503",
+                "AS_SYMBOL",
+                "CHAR_SYMBOL",
+                "CLOSE_PAR_SYMBOL"
+            ],
+            [
+                "WEIGHT_STRING_SYMBOL",
+                "OPEN_PAR_SYMBOL",
+                "expr",
+                "%runtimeFunctionCall513",
                 "CLOSE_PAR_SYMBOL"
             ],
             [
@@ -21675,10 +21683,10 @@
         ]
     },
     {
-        "name": "%runtimeFunctionCall50300_zero_or_one",
+        "name": "%runtimeFunctionCall51310_zero_or_one",
         "bnf": [
             [
-                "%runtimeFunctionCall50300"
+                "%runtimeFunctionCall51310"
             ],
             [
                 "\u03b5"
@@ -21686,7 +21694,7 @@
         ]
     },
     {
-        "name": "%runtimeFunctionCall50300",
+        "name": "%runtimeFunctionCall51310",
         "bnf": [
             [
                 "AS_SYMBOL",
@@ -21697,7 +21705,7 @@
     },
     {
         "versions": "serverVersion < 80000",
-        "name": "%runtimeFunctionCall5030100",
+        "name": "%runtimeFunctionCall5131100",
         "bnf": [
             [
                 "weightStringLevels"
@@ -21705,10 +21713,10 @@
         ]
     },
     {
-        "name": "%runtimeFunctionCall50301_zero_or_one",
+        "name": "%runtimeFunctionCall51311_zero_or_one",
         "bnf": [
             [
-                "%runtimeFunctionCall50301"
+                "%runtimeFunctionCall51311"
             ],
             [
                 "\u03b5"
@@ -21716,18 +21724,18 @@
         ]
     },
     {
-        "name": "%runtimeFunctionCall50301",
+        "name": "%runtimeFunctionCall51311",
         "bnf": [
             [
-                "%runtimeFunctionCall5030100"
+                "%runtimeFunctionCall5131100"
             ]
         ]
     },
     {
-        "name": "%runtimeFunctionCall50300_zero_or_one",
+        "name": "%runtimeFunctionCall51310_zero_or_one",
         "bnf": [
             [
-                "%runtimeFunctionCall50300"
+                "%runtimeFunctionCall51310"
             ],
             [
                 "\u03b5"
@@ -21735,10 +21743,10 @@
         ]
     },
     {
-        "name": "%runtimeFunctionCall50301_zero_or_one",
+        "name": "%runtimeFunctionCall51311_zero_or_one",
         "bnf": [
             [
-                "%runtimeFunctionCall50301"
+                "%runtimeFunctionCall51311"
             ],
             [
                 "\u03b5"
@@ -21746,16 +21754,16 @@
         ]
     },
     {
-        "name": "%runtimeFunctionCall503",
+        "name": "%runtimeFunctionCall513",
         "bnf": [
-            [
-                "%runtimeFunctionCall50300_zero_or_one",
-                "%runtimeFunctionCall50301_zero_or_one"
-            ],
             [
                 "AS_SYMBOL",
                 "BINARY_SYMBOL",
                 "wsNumCodepoints"
+            ],
+            [
+                "%runtimeFunctionCall51310_zero_or_one",
+                "%runtimeFunctionCall51311_zero_or_one"
             ],
             [
                 "COMMA_SYMBOL",
