@@ -2884,8 +2884,6 @@ predicateOperations:
  */
 bitExpr: simpleExpr %bitExpr_rr*;
 
-bitExpr: simpleExpr %bitExpr_rr*;
-
 %bitExpr_rr:
     op = BITWISE_XOR_OPERATOR bitExpr
     | op = (
@@ -3045,8 +3043,16 @@ windowingClause:
     OVER_SYMBOL (windowName | windowSpec)
 ;
 
-leadLagInfo:
+/*leadLagInfo:
     COMMA_SYMBOL (ulonglong_number | PARAM_MARKER) (COMMA_SYMBOL expr)?
+;*/
+
+/*
+ * @FIX:
+ * Fix "leadLagInfo" to support "identifier" and "userVariable" as well.
+ */
+leadLagInfo:
+    COMMA_SYMBOL (ulonglong_number | PARAM_MARKER | identifier | userVariable) (COMMA_SYMBOL expr)?
 ;
 
 nullTreatment:

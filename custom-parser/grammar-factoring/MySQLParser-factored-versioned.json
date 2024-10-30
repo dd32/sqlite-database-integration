@@ -20838,6 +20838,12 @@
             ],
             [
                 "PARAM_MARKER"
+            ],
+            [
+                "identifier"
+            ],
+            [
+                "userVariable"
             ]
         ]
     },
