@@ -195,19 +195,6 @@
         ]
     },
     {
-        "versions": "serverVersion >= 50713",
-        "name": "%alterStatement01100",
-        "bnf": [
-            [
-                "INSTANCE_SYMBOL",
-                "ROTATE_SYMBOL",
-                "textOrIdentifier",
-                "MASTER_SYMBOL",
-                "KEY_SYMBOL"
-            ]
-        ]
-    },
-    {
         "name": "routineAlterOptions_zero_or_one",
         "bnf": [
             [
@@ -267,7 +254,191 @@
                 "alterServer"
             ],
             [
-                "%alterStatement01100"
+                "alterInstance"
+            ]
+        ]
+    },
+    {
+        "name": "alterInstance",
+        "bnf": [
+            [
+                "%alterInstance00"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80016",
+        "name": "%alterInstance0010110",
+        "bnf": [
+            [
+                "BINLOG_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%alterInstance00101",
+        "bnf": [
+            [
+                "INNODB_SYMBOL"
+            ],
+            [
+                "%alterInstance0010110"
+            ]
+        ]
+    },
+    {
+        "name": "%alterInstance001102_zero_or_one",
+        "bnf": [
+            [
+                "%alterInstance001102"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%alterInstance001102",
+        "bnf": [
+            [
+                "NO_SYMBOL",
+                "ROLLBACK_SYMBOL",
+                "ON_SYMBOL",
+                "ERROR_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%alterInstance001102_zero_or_one",
+        "bnf": [
+            [
+                "%alterInstance001102"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80016",
+        "name": "%alterInstance00110",
+        "bnf": [
+            [
+                "RELOAD_SYMBOL",
+                "TLS_SYMBOL",
+                "%alterInstance001102_zero_or_one"
+            ]
+        ]
+    },
+    {
+        "name": "%alterInstance001205_zero_or_one",
+        "bnf": [
+            [
+                "%alterInstance001205"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "%alterInstance001205",
+        "bnf": [
+            [
+                "NO_SYMBOL",
+                "ROLLBACK_SYMBOL",
+                "ON_SYMBOL",
+                "ERROR_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%alterInstance001205_zero_or_one",
+        "bnf": [
+            [
+                "%alterInstance001205"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80021",
+        "name": "%alterInstance00120",
+        "bnf": [
+            [
+                "RELOAD_SYMBOL",
+                "TLS_SYMBOL",
+                "FOR_SYMBOL",
+                "CHANNEL_SYMBOL",
+                "identifier",
+                "%alterInstance001205_zero_or_one"
+            ]
+        ]
+    },
+    {
+        "name": "%alterInstance001300",
+        "bnf": [
+            [
+                "ENABLE_SYMBOL"
+            ],
+            [
+                "DISABLE_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80021",
+        "name": "%alterInstance00130",
+        "bnf": [
+            [
+                "%alterInstance001300",
+                "INNODB_SYMBOL",
+                "REDO_LOG_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80024",
+        "name": "%alterInstance00140",
+        "bnf": [
+            [
+                "RELOAD_SYMBOL",
+                "KEYRING_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "%alterInstance001",
+        "bnf": [
+            [
+                "ROTATE_SYMBOL",
+                "%alterInstance00101",
+                "MASTER_SYMBOL",
+                "KEY_SYMBOL"
+            ],
+            [
+                "%alterInstance00110"
+            ],
+            [
+                "%alterInstance00120"
+            ],
+            [
+                "%alterInstance00130"
+            ],
+            [
+                "%alterInstance00140"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 50711",
+        "name": "%alterInstance00",
+        "bnf": [
+            [
+                "INSTANCE_SYMBOL",
+                "%alterInstance001"
             ]
         ]
     },
@@ -31103,6 +31274,9 @@
                 "INITIAL_SIZE_SYMBOL"
             ],
             [
+                "INNODB_SYMBOL"
+            ],
+            [
                 "INSERT_METHOD_SYMBOL"
             ],
             [
@@ -31131,6 +31305,9 @@
             ],
             [
                 "KEY_BLOCK_SIZE_SYMBOL"
+            ],
+            [
+                "KEYRING_SYMBOL"
             ],
             [
                 "LAST_SYMBOL"
@@ -31479,6 +31656,9 @@
             ],
             [
                 "REDO_BUFFER_SIZE_SYMBOL"
+            ],
+            [
+                "REDO_LOG_SYMBOL"
             ],
             [
                 "REDUNDANT_SYMBOL"
@@ -31833,6 +32013,9 @@
             ],
             [
                 "TIME_SYMBOL"
+            ],
+            [
+                "TLS_SYMBOL"
             ],
             [
                 "TRANSACTION_SYMBOL"

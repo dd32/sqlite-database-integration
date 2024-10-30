@@ -153,7 +153,21 @@ alterStatement:
         | alterLogfileGroup
         | alterServer
         // ALTER USER is part of the user management rule.
-        | {serverVersion >= 50713}? INSTANCE_SYMBOL ROTATE_SYMBOL textOrIdentifier MASTER_SYMBOL KEY_SYMBOL
+        | alterInstance /* @FIX: Add support for "ALTER INSTANCE ..." statement. */
+    )
+;
+
+/*
+ * @FIX:
+ * Add support for "ALTER INSTANCE ..." statement.
+ */
+alterInstance:
+    {serverVersion >= 50711}? INSTANCE_SYMBOL (
+        ROTATE_SYMBOL (INNODB_SYMBOL | {serverVersion >= 80016}? BINLOG_SYMBOL) MASTER_SYMBOL KEY_SYMBOL
+        | {serverVersion >= 80016}? RELOAD_SYMBOL TLS_SYMBOL (NO_SYMBOL ROLLBACK_SYMBOL ON_SYMBOL ERROR_SYMBOL)?
+        | {serverVersion >= 80021}? RELOAD_SYMBOL TLS_SYMBOL FOR_SYMBOL CHANNEL_SYMBOL identifier (NO_SYMBOL ROLLBACK_SYMBOL ON_SYMBOL ERROR_SYMBOL)?
+        | {serverVersion >= 80021}? (ENABLE_SYMBOL | DISABLE_SYMBOL) INNODB_SYMBOL REDO_LOG_SYMBOL
+        | {serverVersion >= 80024}? RELOAD_SYMBOL KEYRING_SYMBOL
     )
 ;
 
@@ -4874,6 +4888,7 @@ identifierKeywordsUnambiguous:
         | INACTIVE_SYMBOL
         | INDEXES_SYMBOL
         | INITIAL_SIZE_SYMBOL
+        | INNODB_SYMBOL
         | INSERT_METHOD_SYMBOL
         | INSTANCE_SYMBOL
         | INVISIBLE_SYMBOL
@@ -4884,6 +4899,7 @@ identifierKeywordsUnambiguous:
         | ISSUER_SYMBOL
         | JSON_SYMBOL
         | KEY_BLOCK_SIZE_SYMBOL
+        | KEYRING_SYMBOL
         | LAST_SYMBOL
         | LEAVES_SYMBOL
         | LESS_SYMBOL
@@ -5000,6 +5016,7 @@ identifierKeywordsUnambiguous:
         | REBUILD_SYMBOL
         | RECOVER_SYMBOL
         | REDO_BUFFER_SIZE_SYMBOL
+        | REDO_LOG_SYMBOL
         | REDUNDANT_SYMBOL
         | REFERENCE_SYMBOL
         | RELAY_SYMBOL
@@ -5118,6 +5135,7 @@ identifierKeywordsUnambiguous:
         | TIMESTAMP_DIFF_SYMBOL
         | TIMESTAMP_SYMBOL
         | TIME_SYMBOL
+        | TLS_SYMBOL
         | TRANSACTION_SYMBOL
         | TRIGGERS_SYMBOL
         | TYPES_SYMBOL

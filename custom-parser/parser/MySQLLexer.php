@@ -925,6 +925,10 @@ class MySQLLexer {
 	const GTID_ONLY_SYMBOL = 841;
 	const ASSIGN_GTIDS_TO_ANONYMOUS_TRANSACTIONS_SYMBOL = 842;
 	const ZONE_SYMBOL = 843;
+	const INNODB_SYMBOL = 844; // From 5.7.11 defined as is_identifier(..., "INNODB") in "sql_yacc.yy".
+	const TLS_SYMBOL = 845; // Added in 8.0.21. From 8.0.16 defined as is_identifier(..., "TLS") in "sql_yacc.yy".
+	const REDO_LOG_SYMBOL = 846; // From 8.0.21 defined as is_identifier(..., "REDO_LOG") in "sql_yacc.yy".
+	const KEYRING_SYMBOL = 847;
 
 	// Comments
 	const COMMENT = 900;
@@ -1182,6 +1186,7 @@ class MySQLLexer {
 		'INFILE' => self::INFILE_SYMBOL,
 		'INITIAL_SIZE' => self::INITIAL_SIZE_SYMBOL,
 		'INNER' => self::INNER_SYMBOL,
+		'INNODB' => self::INNODB_SYMBOL,
 		'INOUT' => self::INOUT_SYMBOL,
 		'INSENSITIVE' => self::INSENSITIVE_SYMBOL,
 		'INSERT' => self::INSERT_SYMBOL,
@@ -1646,6 +1651,7 @@ class MySQLLexer {
 		'JSON_ARRAYAGG' => self::JSON_ARRAYAGG_SYMBOL,
 		'JSON_OBJECTAGG' => self::JSON_OBJECTAGG_SYMBOL,
 		'JSON_TABLE' => self::JSON_TABLE_SYMBOL,
+		'KEYRING' => self::KEYRING_SYMBOL,
 		'LAG' => self::LAG_SYMBOL,
 		'LAST_VALUE' => self::LAST_VALUE_SYMBOL,
 		'LATERAL' => self::LATERAL_SYMBOL,
@@ -1681,6 +1687,7 @@ class MySQLLexer {
 		'RANDOM' => self::RANDOM_SYMBOL,
 		'RANK' => self::RANK_SYMBOL,
 		'RECURSIVE' => self::RECURSIVE_SYMBOL,
+		'REDO_LOG' => self::REDO_LOG_SYMBOL,
 		'REFERENCE' => self::REFERENCE_SYMBOL,
 		'REMOTE' => self::REMOTE_SYMBOL,
 		'REQUIRE_ROW_FORMAT' => self::REQUIRE_ROW_FORMAT_SYMBOL,
@@ -1729,6 +1736,7 @@ class MySQLLexer {
 		'SYSTEM' => self::SYSTEM_SYMBOL,
 		'THREAD_PRIORITY' => self::THREAD_PRIORITY_SYMBOL,
 		'TIES' => self::TIES_SYMBOL,
+		'TLS' => self::TLS_SYMBOL,
 		'UNBOUNDED' => self::UNBOUNDED_SYMBOL,
 		'VCPU' => self::VCPU_SYMBOL,
 		'VISIBLE' => self::VISIBLE_SYMBOL,
@@ -1856,6 +1864,7 @@ class MySQLLexer {
 		self::GENERATED_SYMBOL => 50707,
 		self::GET_SYMBOL => 50604,
 		self::GROUP_REPLICATION_SYMBOL => 50707,
+		self::INNODB_SYMBOL => 50711,
 		self::INSTANCE_SYMBOL => 50713,
 		self::JSON_SYMBOL => 50708,
 		self::MASTER_AUTO_POSITION_SYMBOL => 50605,
@@ -1922,6 +1931,7 @@ class MySQLLexer {
 		self::JSON_ARRAYAGG_SYMBOL => 80000,
 		self::JSON_OBJECTAGG_SYMBOL => 80000,
 		self::JSON_TABLE_SYMBOL => 80000,
+		self::KEYRING_SYMBOL => 80024,
 		self::LAG_SYMBOL => 80000,
 		self::LAST_VALUE_SYMBOL => 80000,
 		self::LATERAL_SYMBOL => 80014,
@@ -1957,6 +1967,7 @@ class MySQLLexer {
 		self::RANDOM_SYMBOL => 80018,
 		self::RANK_SYMBOL => 80000,
 		self::RECURSIVE_SYMBOL => 80000,
+		self::REDO_LOG_SYMBOL => 80021,
 		self::REFERENCE_SYMBOL => 80011,
 		self::REQUIRE_ROW_FORMAT_SYMBOL => 80019,
 		self::REQUIRE_TABLE_PRIMARY_KEY_CHECK_SYMBOL => 80019,
@@ -2004,6 +2015,7 @@ class MySQLLexer {
 		self::SYSTEM_SYMBOL => 80000,
 		self::THREAD_PRIORITY_SYMBOL => 80000,
 		self::TIES_SYMBOL => 80000,
+		self::TLS_SYMBOL => 80016,
 		self::UNBOUNDED_SYMBOL => 80000,
 		self::VCPU_SYMBOL => 80000,
 		self::VISIBLE_SYMBOL => 80000,

@@ -66,8 +66,6 @@ foreign key (a,b) references t3 (c,d) on update set null) engine=myisam"
 begin
 alter database character set koi8r;
 end"
-"ALTER INSTANCE RELOAD TLS"
-"ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR"
 "CREATE TABLESPACE ts1 ENGINE_ATTRIBUTE=''"
 "CREATE TABLESPACE ts2 ENGINE_ATTRIBUTE='{""c"": ""v""}'"
 "ALTER TABLESPACE ts1 ENGINE_ATTRIBUTE='{""foo"": ""bar""}'"
