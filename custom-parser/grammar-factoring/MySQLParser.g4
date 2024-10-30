@@ -3118,6 +3118,9 @@ runtimeFunctionCall:
     | name = HOUR_SYMBOL exprWithParentheses
     | name = INSERT_SYMBOL OPEN_PAR_SYMBOL expr COMMA_SYMBOL expr COMMA_SYMBOL expr COMMA_SYMBOL expr CLOSE_PAR_SYMBOL
     | name = INTERVAL_SYMBOL OPEN_PAR_SYMBOL expr (COMMA_SYMBOL expr)+ CLOSE_PAR_SYMBOL
+    /* @FIX: Add support for "JSON_VALUE(..., '...' RETURNING <type>). */
+    | {serverVersion >= 80021}?
+        name = JSON_VALUE_SYMBOL OPEN_PAR_SYMBOL simpleExpr COMMA_SYMBOL textLiteral (RETURNING_SYMBOL castType)? onEmptyOrError? CLOSE_PAR_SYMBOL
     | name = LEFT_SYMBOL OPEN_PAR_SYMBOL expr COMMA_SYMBOL expr CLOSE_PAR_SYMBOL
     | name = MINUTE_SYMBOL exprWithParentheses
     | name = MONTH_SYMBOL exprWithParentheses
@@ -5066,6 +5069,7 @@ identifierKeywordsUnambiguous:
         | RESUME_SYMBOL
         | RETAIN_SYMBOL
         | RETURNED_SQLSTATE_SYMBOL
+        | RETURNING_SYMBOL
         | RETURNS_SYMBOL
         | REUSE_SYMBOL
         | REVERSE_SYMBOL
@@ -5453,6 +5457,7 @@ roleOrLabelKeyword:
         | ISSUER_SYMBOL
         | INSERT_METHOD_SYMBOL
         | JSON_SYMBOL                   // Conditionally set in the lexer.
+        | JSON_VALUE_SYMBOL
         | KEY_BLOCK_SIZE_SYMBOL
         | LAST_SYMBOL
         | LEAVES_SYMBOL
