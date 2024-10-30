@@ -1,24 +1,14 @@
 "SELECT 1 /*!99999 /* */ */"
 "select 1ea10.1a20,1e+ 1e+10 from 1ea10"
 "ALTER DATABASE DEFAULT CHARACTER SET latin2"
-" ¡¢£¤¥±º»¼½¾ 
-05
-15
-25
-35
+"聠聡聢聣聤聬聭聮聯聰聲聽隆垄拢陇楼卤潞禄录陆戮 聶職聳聴
+0聲5
+1聲5
+2聲5
+3聲5
 4
 
 SET NAMES gb18030"
-"SELECT HEX('²@\') FROM DUAL;
-
-
-
-CREATE TABLE t1 (a varchar(16)) character set sjis;
-INSERT INTO t1 VALUES (0x8372835E),(0x8352835E);
-SELECT hex(a), hex(lower(a)), hex(upper(a)) FROM t1 ORDER BY binary(a);
-DROP TABLE t1;
-
-SELECT QUOTE('\')"
 "CREATE TABLE t1 (g GEOMCOLLECTION)"
 "alter user mysqltest_7@ identified by 'systpass'"
 "CREATE TEMPORARY TABLE t6(a INT) ENGINE = MERGE UNION = ()"

@@ -182,6 +182,9 @@ foreach (scandir($testsDir) as $i => $file) {
 	// Track whether we should skip the next query.
 	$skipNext = false;
 
+	// Track character set when specified.
+	$charset = null;
+
 	$lines = 0;
 	$query = '';
 	$contents = utf8_encode(file_get_contents($testsDir . '/' . $file));
@@ -228,6 +231,33 @@ foreach (scandir($testsDir) as $i => $file) {
 		if (str_starts_with(strtolower($line), '--error') || str_starts_with(strtolower($line), '-- error')) {
 			$skipNext = true;
 			continue;
+		}
+
+		// Track character set.
+		if (str_starts_with(strtolower($line), '--character_set')) {
+			$charset = trim(substr($line, strlen('--character_set')));
+			continue;
+		}
+
+		// Convert line to UTF-8 if needed.
+		if ($charset) {
+			// PHP's mbstring doesn't seem to support TIS-620, so we need to convert it manually.
+			if ($charset === 'tis620') {
+				$out = '';
+				for ($i = 0; $i < strlen($line); $i++) {
+					$ord = ord($line[$i]);
+					$out .= $ord >= 0xA1 && $ord <= 0xFB ? "&#" . (0x0E01 + $ord - 0xA1) . ";" : $line[$i];
+				}
+				$line = mb_convert_encoding($out, 'utf-8', 'HTML-ENTITIES');;
+			} else {
+				$charset = $charset === 'utf8mb4' ? 'utf-8' : $charset;
+				$charset = $charset === 'ujis' ? 'euc-jp' : $charset;
+				try {
+					$line = mb_convert_encoding($line, 'utf-8', $charset);
+				} catch (Throwable $e) {
+					echo "Failed to convert line $lines in $file from $charset to UTF-8: $line\n";
+				}
+			}
 		}
 
 		// Skip comments.
