@@ -1,6 +1,5 @@
 "SELECT 1 /*!99999 /* */ */"
 "select 1ea10.1a20,1e+ 1e+10 from 1ea10"
-"ALTER DATABASE DEFAULT CHARACTER SET latin2"
 "聠聡聢聣聤聬聭聮聯聰聲聽隆垄拢陇楼卤潞禄录陆戮 聶職聳聴
 0聲5
 1聲5
@@ -17,8 +16,4 @@ SET NAMES gb18030"
 "SELECT 'a%' LIKE 'a!%' ESCAPE '$', 'a%' LIKE 'a!' || '%' ESCAPE '$'"
 "SELECT 'a%' NOT LIKE 'a!%' ESCAPE '$', 'a%' NOT LIKE 'a!' || '%' ESCAPE '$'"
 "ALTER SCHEMA s1 READ ONLY DEFAULT"
-"create procedure mysqltest1.p1()
-begin
-alter database character set koi8r;
-end"
 "load data infile '../../std_data/words.dat' into table t1 (a) set b:= f1()"

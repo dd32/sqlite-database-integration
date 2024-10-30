@@ -172,7 +172,8 @@ alterInstance:
 ;
 
 alterDatabase:
-    DATABASE_SYMBOL schemaRef (
+    /* @FIX: Make "schemaRef" optional. */
+    DATABASE_SYMBOL schemaRef? (
         createDatabaseOption+
         | {serverVersion < 80000}? UPGRADE_SYMBOL DATA_SYMBOL DIRECTORY_SYMBOL NAME_SYMBOL
     )

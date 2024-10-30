@@ -443,11 +443,22 @@
         ]
     },
     {
+        "name": "schemaRef_zero_or_one",
+        "bnf": [
+            [
+                "schemaRef"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
         "name": "alterDatabase",
         "bnf": [
             [
                 "DATABASE_SYMBOL",
-                "schemaRef",
+                "schemaRef_zero_or_one",
                 "%alterDatabase02"
             ]
         ]
