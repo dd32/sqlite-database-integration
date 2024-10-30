@@ -2605,10 +2605,22 @@
                 "tsOptionEngine"
             ],
             [
+                "%alterTablespaceOption40"
+            ],
+            [
                 "tsOptionWait"
             ],
             [
                 "tsOptionEncryption"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80021",
+        "name": "%alterTablespaceOption40",
+        "bnf": [
+            [
+                "tsOptionEngineAttribute"
             ]
         ]
     },
@@ -4277,22 +4289,34 @@
                 "tsOptionEngine"
             ],
             [
+                "%tablespaceOption60"
+            ],
+            [
                 "tsOptionWait"
             ],
             [
                 "tsOptionComment"
             ],
             [
-                "%tablespaceOption80"
+                "%tablespaceOption90"
             ],
             [
-                "%tablespaceOption90"
+                "%tablespaceOption100"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80021",
+        "name": "%tablespaceOption60",
+        "bnf": [
+            [
+                "tsOptionEngineAttribute"
             ]
         ]
     },
     {
         "versions": "serverVersion >= 50707",
-        "name": "%tablespaceOption80",
+        "name": "%tablespaceOption90",
         "bnf": [
             [
                 "tsOptionFileblockSize"
@@ -4301,7 +4325,7 @@
     },
     {
         "versions": "serverVersion >= 80014",
-        "name": "%tablespaceOption90",
+        "name": "%tablespaceOption100",
         "bnf": [
             [
                 "tsOptionEncryption"
@@ -4475,6 +4499,27 @@
                 "ENGINE_SYMBOL",
                 "EQUAL_OPERATOR_zero_or_one",
                 "engineRef"
+            ]
+        ]
+    },
+    {
+        "name": "EQUAL_OPERATOR_zero_or_one",
+        "bnf": [
+            [
+                "EQUAL_OPERATOR"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "name": "tsOptionEngineAttribute",
+        "bnf": [
+            [
+                "ENGINE_ATTRIBUTE_SYMBOL",
+                "EQUAL_OPERATOR_zero_or_one",
+                "textStringLiteral"
             ]
         ]
     },

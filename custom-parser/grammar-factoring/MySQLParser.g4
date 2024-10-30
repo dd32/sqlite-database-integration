@@ -424,6 +424,7 @@ alterTablespaceOption:
     | tsOptionAutoextendSize
     | tsOptionMaxSize
     | tsOptionEngine
+    | {serverVersion >= 80021}? tsOptionEngineAttribute /* @FIX: Add missing "ENGINE_ATTRIBUTE" option. */
     | tsOptionWait
     | tsOptionEncryption
 ;
@@ -692,6 +693,7 @@ tablespaceOption:
     | tsOptionExtentSize
     | tsOptionNodegroup
     | tsOptionEngine
+    | {serverVersion >= 80021}? tsOptionEngineAttribute /* @FIX: Add missing "ENGINE_ATTRIBUTE" option. */
     | tsOptionWait
     | tsOptionComment
     | {serverVersion >= 50707}? tsOptionFileblockSize
@@ -724,6 +726,14 @@ tsOptionNodegroup:
 
 tsOptionEngine:
     STORAGE_SYMBOL? ENGINE_SYMBOL EQUAL_OPERATOR? engineRef
+;
+
+/*
+ * @FIX:
+ * Add missing "ENGINE_ATTRIBUTE" option.
+ */
+tsOptionEngineAttribute:
+    ENGINE_ATTRIBUTE_SYMBOL EQUAL_OPERATOR? textStringLiteral
 ;
 
 tsOptionWait: (WAIT_SYMBOL | NO_WAIT_SYMBOL)

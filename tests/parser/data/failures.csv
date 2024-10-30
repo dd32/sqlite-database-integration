@@ -47,9 +47,6 @@ SELECT QUOTE('\')"
 begin
 alter database character set koi8r;
 end"
-"CREATE TABLESPACE ts1 ENGINE_ATTRIBUTE=''"
-"CREATE TABLESPACE ts2 ENGINE_ATTRIBUTE='{""c"": ""v""}'"
-"ALTER TABLESPACE ts1 ENGINE_ATTRIBUTE='{""foo"": ""bar""}'"
 "create temporary table tg (i int not null) engine=merge union=()"
 "SELECT JSON_VALUE('{""data"": ""2019-01-01 11:11::11""}', '$.data' RETURNING DATETIME) AS v"
 "SELECT JSON_VALUE('{""data"": ""2019-01/01""}', '$.data' RETURNING DATE) AS v"
