@@ -27112,6 +27112,18 @@
                 "KEY_BLOCK_SIZE_SYMBOL",
                 "EQUAL_OPERATOR_zero_or_one",
                 "ulong_number"
+            ],
+            [
+                "%createTableOption250"
+            ],
+            [
+                "%createTableOption260"
+            ],
+            [
+                "%createTableOption270"
+            ],
+            [
+                "%createTableOption280"
             ]
         ]
     },
@@ -27293,6 +27305,69 @@
             ],
             [
                 "MEMORY_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80021",
+        "name": "%createTableOption250",
+        "bnf": [
+            [
+                "START_SYMBOL",
+                "TRANSACTION_SYMBOL"
+            ]
+        ]
+    },
+    {
+        "name": "EQUAL_OPERATOR_zero_or_one",
+        "bnf": [
+            [
+                "EQUAL_OPERATOR"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80021",
+        "name": "%createTableOption260",
+        "bnf": [
+            [
+                "ENGINE_ATTRIBUTE_SYMBOL",
+                "EQUAL_OPERATOR_zero_or_one",
+                "textString"
+            ]
+        ]
+    },
+    {
+        "name": "EQUAL_OPERATOR_zero_or_one",
+        "bnf": [
+            [
+                "EQUAL_OPERATOR"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80021",
+        "name": "%createTableOption270",
+        "bnf": [
+            [
+                "SECONDARY_ENGINE_ATTRIBUTE_SYMBOL",
+                "EQUAL_OPERATOR_zero_or_one",
+                "textString"
+            ]
+        ]
+    },
+    {
+        "versions": "serverVersion >= 80023",
+        "name": "%createTableOption280",
+        "bnf": [
+            [
+                "tsOptionAutoextendSize"
             ]
         ]
     },
@@ -31145,6 +31220,9 @@
                 "ENGINE_SYMBOL"
             ],
             [
+                "ENGINE_ATTRIBUTE_SYMBOL"
+            ],
+            [
                 "ENUM_SYMBOL"
             ],
             [
@@ -31770,6 +31848,9 @@
             ],
             [
                 "SECONDARY_ENGINE_SYMBOL"
+            ],
+            [
+                "SECONDARY_ENGINE_ATTRIBUTE_SYMBOL"
             ],
             [
                 "SECONDARY_LOAD_SYMBOL"

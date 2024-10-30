@@ -3960,6 +3960,11 @@ createTableOption: // In the order as they appear in the server grammar.
     | option = STORAGE_SYMBOL (DISK_SYMBOL | MEMORY_SYMBOL)
     | option = CONNECTION_SYMBOL EQUAL_OPERATOR? textString
     | option = KEY_BLOCK_SIZE_SYMBOL EQUAL_OPERATOR? ulong_number
+    /* @FIX: Add missing options. */
+    | {serverVersion >= 80021}? option = START_SYMBOL TRANSACTION_SYMBOL
+    | {serverVersion >= 80021}? option = ENGINE_ATTRIBUTE_SYMBOL EQUAL_OPERATOR? textString
+    | {serverVersion >= 80021}? option = SECONDARY_ENGINE_ATTRIBUTE_SYMBOL EQUAL_OPERATOR? textString
+    | {serverVersion >= 80023}? tsOptionAutoextendSize
 ;
 
 ternaryOption:
@@ -4853,6 +4858,7 @@ identifierKeywordsUnambiguous:
         | ENFORCED_SYMBOL
         | ENGINES_SYMBOL
         | ENGINE_SYMBOL
+        | ENGINE_ATTRIBUTE_SYMBOL
         | ENUM_SYMBOL
         | ERRORS_SYMBOL
         | ERROR_SYMBOL
@@ -5062,6 +5068,7 @@ identifierKeywordsUnambiguous:
         | SCHEDULE_SYMBOL
         | SCHEMA_NAME_SYMBOL
         | SECONDARY_ENGINE_SYMBOL
+        | SECONDARY_ENGINE_ATTRIBUTE_SYMBOL
         | SECONDARY_LOAD_SYMBOL
         | SECONDARY_SYMBOL
         | SECONDARY_UNLOAD_SYMBOL
