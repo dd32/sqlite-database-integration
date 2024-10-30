@@ -25467,6 +25467,10 @@
             [
                 "NO_SYMBOL",
                 "ACTION_SYMBOL"
+            ],
+            [
+                "SET_SYMBOL",
+                "DEFAULT_SYMBOL"
             ]
         ]
     },

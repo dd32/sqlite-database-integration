@@ -29,15 +29,6 @@ SELECT hex(a), hex(lower(a)), hex(upper(a)) FROM t1 ORDER BY binary(a);
 DROP TABLE t1;
 
 SELECT QUOTE('\')"
-"create table t1 (
-a int not null,
-b int not null references t2 (c),
-primary key (a,b),
-foreign key (a,b) references t3 (c,d) on delete no action
-on update no action,
-foreign key (a,b) references t3 (c,d) on update cascade,
-foreign key (a,b) references t3 (c,d) on delete set default,
-foreign key (a,b) references t3 (c,d) on update set null) engine=myisam"
 "CREATE TABLE t1 (g GEOMCOLLECTION)"
 "alter user mysqltest_7@ identified by 'systpass'"
 "CREATE TEMPORARY TABLE t6(a INT) ENGINE = MERGE UNION = ()"

@@ -3730,6 +3730,7 @@ deleteOption:
     (RESTRICT_SYMBOL | CASCADE_SYMBOL)
     | SET_SYMBOL nullLiteral
     | NO_SYMBOL ACTION_SYMBOL
+    | SET_SYMBOL DEFAULT_SYMBOL /* @FIX: Add missing "SET DEFAULT" option. */
 ;
 
 keyList:
