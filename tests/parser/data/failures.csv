@@ -1,15 +1,5 @@
 "SELECT 1 /*!99999 /* */ */"
 "select 1ea10.1a20,1e+ 1e+10 from 1ea10"
-"SELECT MAX(k COLLATE latin1_german2_ci)
-FROM t1
-WHERE
-SELECT *
-FROM t1
-WHERE (_latin1'Mu""ller' COLLATE latin1_german2_ci) = k
-HAVING
-SELECT *
-FROM t1
-HAVING (_latin1'Mu""ller' COLLATE latin1_german2_ci) = k"
 "ALTER DATABASE DEFAULT CHARACTER SET latin2"
 " ¡¢£¤¥±º»¼½¾ 
 05

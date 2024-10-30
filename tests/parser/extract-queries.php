@@ -176,6 +176,9 @@ foreach (scandir($testsDir) as $i => $file) {
 	// Track whether we're inside a command body (perl, append_file, write_file), save terminator.
 	$command_body_terminator = null;
 
+	// Track whether we're inside a disabled block.
+	$is_disabled = false;
+
 	// Track whether we should skip the next query.
 	$skipNext = false;
 
@@ -206,6 +209,18 @@ foreach (scandir($testsDir) as $i => $file) {
 			|| preg_match('/^(--)?(write_file|append_file)(\s+(\S+))?(\s+(?P<terminator>\w+))?/', $line, $matches)
 		) {
 			$command_body_terminator = $matches['terminator'] ?? 'EOF';
+			continue;
+		}
+
+		// Skip disabled blocks.
+		if (!$is_disabled && str_starts_with(strtolower($line), '--disable_testcase')) {
+			$is_disabled = true;
+			continue;
+		}
+		if ($is_disabled) {
+			if (str_starts_with(strtolower($line), '--enable_testcase')) {
+				$is_disabled = false;
+			}
 			continue;
 		}
 
