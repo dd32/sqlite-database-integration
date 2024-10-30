@@ -30445,7 +30445,7 @@
         "name": "standardFloatOptions",
         "bnf": [
             [
-                "precision"
+                "fieldLength"
             ]
         ]
     },

@@ -4578,8 +4578,16 @@ floatOptions:
     | precision
 ;
 
-standardFloatOptions:
+/*standardFloatOptions:
     precision
+;*/
+
+/*
+ * FIX:
+ * Use "fieldLength" as required by "standardFloatOptions".
+ */
+standardFloatOptions:
+    fieldLength
 ;
 
 precision:
