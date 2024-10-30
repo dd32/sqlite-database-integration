@@ -11264,7 +11264,7 @@
         "bnf": [
             [
                 "ifExists_zero_or_one",
-                "qualifiedIdentifier"
+                "internalVariableName"
             ]
         ]
     },

@@ -1719,7 +1719,7 @@ replicationStatement:
     )
     | changeMaster
     | RESET_SYMBOL resetOption (COMMA_SYMBOL resetOption)*
-    | {serverVersion > 80000}? RESET_SYMBOL PERSIST_SYMBOL (ifExists? qualifiedIdentifier)?
+    | {serverVersion > 80000}? RESET_SYMBOL PERSIST_SYMBOL (ifExists? internalVariableName)?
     | slave
     | {serverVersion >= 50700}? changeReplication
     | replicationLoad
