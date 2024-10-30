@@ -3957,7 +3957,8 @@ createTableOption: // In the order as they appear in the server grammar.
         | REDUNDANT_SYMBOL
         | COMPACT_SYMBOL
     )
-    | option = UNION_SYMBOL EQUAL_OPERATOR? OPEN_PAR_SYMBOL tableRefList CLOSE_PAR_SYMBOL
+    /* @FIX: Make "tablRefList" optional. */
+    | option = UNION_SYMBOL EQUAL_OPERATOR? OPEN_PAR_SYMBOL tableRefList? CLOSE_PAR_SYMBOL
     | defaultCharset
     | defaultCollation
     | option = INSERT_METHOD_SYMBOL EQUAL_OPERATOR? method = (

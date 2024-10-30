@@ -27048,6 +27048,17 @@
         ]
     },
     {
+        "name": "tableRefList_zero_or_one",
+        "bnf": [
+            [
+                "tableRefList"
+            ],
+            [
+                "\u03b5"
+            ]
+        ]
+    },
+    {
         "name": "EQUAL_OPERATOR_zero_or_one",
         "bnf": [
             [
@@ -27178,7 +27189,7 @@
                 "UNION_SYMBOL",
                 "EQUAL_OPERATOR_zero_or_one",
                 "OPEN_PAR_SYMBOL",
-                "tableRefList",
+                "tableRefList_zero_or_one",
                 "CLOSE_PAR_SYMBOL"
             ],
             [
