@@ -7,6 +7,9 @@ set_error_handler(
 	}
 );
 
+require_once __DIR__ . '/../../wp-includes/mysql/class-mysql-lexer.php';
+require_once __DIR__ . '/../../wp-includes/parser/class-parser.php';
+
 function getStats( $total, $failures, $exceptions ) {
 	return sprintf(
 		'Total: %5d  |  Failures: %4d / %2d%%  |  Exceptions: %4d / %2d%%',
@@ -18,10 +21,7 @@ function getStats( $total, $failures, $exceptions ) {
 	);
 }
 
-require_once __DIR__ . '/../../custom-parser/parser/DynamicRecursiveDescentParser.php';
-require_once __DIR__ . '/../../custom-parser/parser/MySQLLexer.php';
-
-$grammar_data = include __DIR__ . '/../../custom-parser/parser/grammar.php';
+$grammar_data = include __DIR__ . '/../../wp-includes/mysql/mysql-grammar.php';
 $grammar      = new Grammar( $grammar_data );
 
 $handle     = fopen( __DIR__ . '/data/queries.csv', 'r' );
@@ -50,7 +50,7 @@ while ( ( $query = fgetcsv( $handle ) ) !== false ) {
 			throw new Exception( 'Empty tokens' );
 		}
 
-		$parser     = new DynamicRecursiveDescentParser( $grammar, $tokens );
+		$parser     = new Parser( $grammar, $tokens );
 		$parse_tree = $parser->parse();
 		if ( null === $parse_tree ) {
 			$failures[] = $query;

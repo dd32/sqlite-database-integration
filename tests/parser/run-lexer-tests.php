@@ -7,8 +7,7 @@ set_error_handler(
 	}
 );
 
-require_once __DIR__ . '/../../custom-parser/parser/DynamicRecursiveDescentParser.php';
-require_once __DIR__ . '/../../custom-parser/parser/MySQLLexer.php';
+require_once __DIR__ . '/../../wp-includes/mysql/class-mysql-lexer.php';
 
 $handle = fopen( __DIR__ . '/data/queries.csv', 'r' );
 

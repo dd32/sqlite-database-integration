@@ -1,4 +1,4 @@
-<?php
+<?php // phpcs:disable WordPress.Files.FileName.InvalidClassFileName
 
 require_once __DIR__ . '/MySQLLexer.php';
 require_once __DIR__ . '/DynamicRecursiveDescentParser.php';
@@ -62,7 +62,7 @@ class MySQLonSQLiteDriver {
 		$this->has_found_rows_call     = false;
 		$this->last_calc_rows_result   = null;
 
-		$parser     = new DynamicRecursiveDescentParser( $this->grammar, tokenize_query( $query ) );
+		$parser     = new Parser( $this->grammar, tokenize_query( $query ) );
 		$parse_tree = $parser->parse();
 		$expr       = $this->translate_query( $parse_tree );
 		$expr       = $this->rewrite_sql_calc_found_rows( $expr );
@@ -126,13 +126,13 @@ class MySQLonSQLiteDriver {
 			return null;
 		}
 
-		if ( $parse_tree instanceof MySQLToken ) {
+		if ( $parse_tree instanceof MySQL_Token ) {
 			$token = $parse_tree;
 			switch ( $token->type ) {
-				case MySQLLexer::EOF:
+				case MySQL_Lexer::EOF:
 					return new SQLiteExpression( array() );
 
-				case MySQLLexer::IDENTIFIER:
+				case MySQL_Lexer::IDENTIFIER:
 					return new SQLiteExpression(
 						array(
 							SQLiteTokenFactory::identifier(
@@ -150,7 +150,7 @@ class MySQLonSQLiteDriver {
 			}
 		}
 
-		if ( ! ( $parse_tree instanceof ParseTree ) ) {
+		if ( ! ( $parse_tree instanceof Parse_Tree ) ) {
 			throw new Exception( 'translateQuery only accepts MySQLToken and ParseTree instances' );
 		}
 
@@ -165,14 +165,14 @@ class MySQLonSQLiteDriver {
 			case 'querySpecOption':
 				$token = $parse_tree->get_token();
 				switch ( $token->type ) {
-					case MySQLLexer::ALL_SYMBOL:
-					case MySQLLexer::DISTINCT_SYMBOL:
+					case MySQL_Lexer::ALL_SYMBOL:
+					case MySQL_Lexer::DISTINCT_SYMBOL:
 						return new SQLiteExpression(
 							array(
 								SQLiteTokenFactory::raw( $token->text ),
 							)
 						);
-					case MySQLLexer::SQL_CALC_FOUND_ROWS_SYMBOL:
+					case MySQL_Lexer::SQL_CALC_FOUND_ROWS_SYMBOL:
 						$this->has_sql_calc_found_rows = true;
 						// Fall through to default.
 					default:
@@ -188,7 +188,7 @@ class MySQLonSQLiteDriver {
 				// FROM DUAL statement, as FROM mytable, DUAL is a syntax
 				// error.
 				if (
-					$parse_tree->has_token( MySQLLexer::DUAL_SYMBOL ) &&
+					$parse_tree->has_token( MySQL_Lexer::DUAL_SYMBOL ) &&
 					! $parse_tree->has_child( 'tableReferenceList' )
 				) {
 					return null;
@@ -272,10 +272,10 @@ class MySQLonSQLiteDriver {
 			case 'textStringLiteral':
 				return new SQLiteExpression(
 					array(
-						$parse_tree->has_token( MySQLLexer::DOUBLE_QUOTED_TEXT ) ?
-						SQLiteTokenFactory::double_quoted_value( $parse_tree->get_token( MySQLLexer::DOUBLE_QUOTED_TEXT )->text ) : false,
-						$parse_tree->has_token( MySQLLexer::SINGLE_QUOTED_TEXT ) ?
-						SQLiteTokenFactory::raw( $parse_tree->get_token( MySQLLexer::SINGLE_QUOTED_TEXT )->text ) : false,
+						$parse_tree->has_token( MySQL_Lexer::DOUBLE_QUOTED_TEXT ) ?
+						SQLiteTokenFactory::double_quoted_value( $parse_tree->get_token( MySQL_Lexer::DOUBLE_QUOTED_TEXT )->text ) : false,
+						$parse_tree->has_token( MySQL_Lexer::SINGLE_QUOTED_TEXT ) ?
+						SQLiteTokenFactory::raw( $parse_tree->get_token( MySQL_Lexer::SINGLE_QUOTED_TEXT )->text ) : false,
 					)
 				);
 

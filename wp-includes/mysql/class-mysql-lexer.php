@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/class-mysql-token.php';
+
 /**
  * This lexer is based on the MySQL Workbench lexer grammar.
  * See:
@@ -7,7 +9,7 @@
  *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/grammars/predefined.tokens
  *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/mysql/MySQLBaseLexer.cpp
  */
-class MySQLLexer {
+class MySQL_Lexer {
 	// Token channels
 	const CHANNEL_DEFAULT = 0;
 	const CHANNEL_HIDDEN  = 99;
@@ -2391,14 +2393,14 @@ class MySQLLexer {
 			}
 		} elseif ( null === $la ) {
 			$this->match_eof();
-			$this->token_instance = new MySQLToken( self::EOF, '<EOF>' );
+			$this->token_instance = new MySQL_Token( self::EOF, '<EOF>' );
 			return false;
 		} else {
 			$this->consume();
 			$this->type = self::INVALID_INPUT;
 		}
 
-		$this->token_instance = null === $this->type ? null : new MySQLToken( $this->type, $this->text, $this->channel );
+		$this->token_instance = null === $this->type ? null : new MySQL_Token( $this->type, $this->text, $this->channel );
 		return true;
 	}
 
@@ -2476,7 +2478,7 @@ class MySQLLexer {
 		}
 
 		// With "SQL_MODE_HIGH_NOT_PRECEDENCE" enabled, "NOT" needs to be emitted as a higher priority NOT2 symbol.
-		if ( self::NOT_SYMBOL === $this->type && $this->is_sql_mode_active( MySQLLexer::SQL_MODE_HIGH_NOT_PRECEDENCE ) ) {
+		if ( self::NOT_SYMBOL === $this->type && $this->is_sql_mode_active( MySQL_Lexer::SQL_MODE_HIGH_NOT_PRECEDENCE ) ) {
 			$this->type = self::NOT2_SYMBOL;
 		}
 
@@ -2739,46 +2741,12 @@ class MySQLLexer {
 	}
 }
 
-class MySQLToken {
-	public $type;
-	public $text;
-	public $channel;
-
-	public function __construct( $type, $text, $channel = null ) {
-		$this->type    = $type;
-		$this->text    = $text;
-		$this->channel = $channel;
-	}
-
-	public function get_type() {
-		return $this->type;
-	}
-
-	public function get_name() {
-		return MySQLLexer::get_token_name( $this->type );
-	}
-
-	public function get_text() {
-		return $this->text;
-	}
-
-	public function get_channel() {
-		return $this->channel;
-	}
-
-	public function __toString() {
-		return $this->text . '<' . $this->type . ',' . $this->get_name() . '>';
-	}
-
-	public function extract_value() {
-		if ( MySQLLexer::BACK_TICK_QUOTED_ID === $this->type ) {
-			return substr( $this->text, 1, -1 );
-		} elseif ( MySQLLexer::DOUBLE_QUOTED_TEXT === $this->type ) {
-			return substr( $this->text, 1, -1 );
-		} elseif ( MySQLLexer::SINGLE_QUOTED_TEXT === $this->type ) {
-			return substr( $this->text, 1, -1 );
-		} else {
-			return $this->text;
-		}
-	}
+function tokenize_query( $sql ) {
+	$lexer  = new MySQL_Lexer( $sql );
+	$tokens = array();
+	do {
+		$token    = $lexer->get_next_token();
+		$tokens[] = $token;
+	} while ( MySQL_Lexer::EOF !== $token->type );
+	return $tokens;
 }
