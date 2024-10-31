@@ -1,31 +1,33 @@
 <?php
 
 // Throw exception if anything fails.
-set_error_handler(function ($severity, $message, $file, $line) {
-	throw new ErrorException($message, 0, $severity, $file, $line);
-});
+set_error_handler(
+	function ( $severity, $message, $file, $line ) {
+		throw new ErrorException( $message, 0, $severity, $file, $line );
+	}
+);
 
 require_once __DIR__ . '/../../custom-parser/parser/DynamicRecursiveDescentParser.php';
 require_once __DIR__ . '/../../custom-parser/parser/MySQLLexer.php';
 
-$handle = fopen(__DIR__ . '/data/queries.csv', 'r');
+$handle = fopen( __DIR__ . '/data/queries.csv', 'r' );
 
-$i = 1;
-$start = microtime(true);
-while (($query = fgetcsv($handle)) !== false) {
+$i     = 1;
+$start = microtime( true );
+while ( ( $query = fgetcsv( $handle ) ) !== false ) {
 	$query = $query[0];
 
-	$tokens = tokenizeQuery($query);
-	if (empty($tokens)) {
-		throw new Exception('Failed to tokenize query: ' . $query);
+	$tokens = tokenize_query( $query );
+	if ( empty( $tokens ) ) {
+		throw new Exception( 'Failed to tokenize query: ' . $query );
 	}
-	$i++;
+	++$i;
 }
 
-echo "Tokenized $i queries in ",  microtime(true) - $start, 's', PHP_EOL;
+echo "Tokenized $i queries in ", microtime( true ) - $start, 's', PHP_EOL;
 
 // Add some manual tests
-$tests = [
+$tests = array(
 	/**
 	 * Numbers vs. identifiers:
 	 *
@@ -35,69 +37,71 @@ $tests = [
 	 */
 
 	// INT numbers vs. identifiers
-	'123' => ['INT_NUMBER', 'EOF'],
-	'123abc' => ['IDENTIFIER', 'EOF'], // identifier
+	'123'        => array( 'INT_NUMBER', 'EOF' ),
+	'123abc'     => array( 'IDENTIFIER', 'EOF' ), // identifier
 
 	// BIN numbers vs. identifiers
-	'0b01' => ['BIN_NUMBER', 'EOF'],
-	'0b01xyz' => ['IDENTIFIER', 'EOF'], // identifier
-	"b'01'" => ['BIN_NUMBER', 'EOF'],
-	"b'01xyz'" => ['BIN_NUMBER', 'IDENTIFIER', 'INVALID_INPUT', 'EOF'],
+	'0b01'       => array( 'BIN_NUMBER', 'EOF' ),
+	'0b01xyz'    => array( 'IDENTIFIER', 'EOF' ), // identifier
+	"b'01'"      => array( 'BIN_NUMBER', 'EOF' ),
+	"b'01xyz'"   => array( 'BIN_NUMBER', 'IDENTIFIER', 'INVALID_INPUT', 'EOF' ),
 
 	// HEX numbers vs. identifiers
-	'0xab01' => ['HEX_NUMBER', 'EOF'],
-	'0xab01xyz' => ['IDENTIFIER', 'EOF'], // identifier
-	"x'ab01'" => ['HEX_NUMBER', 'EOF'],
-	"x'ab01xyz'" => ['HEX_NUMBER', 'IDENTIFIER', 'INVALID_INPUT', 'EOF'],
+	'0xab01'     => array( 'HEX_NUMBER', 'EOF' ),
+	'0xab01xyz'  => array( 'IDENTIFIER', 'EOF' ), // identifier
+	"x'ab01'"    => array( 'HEX_NUMBER', 'EOF' ),
+	"x'ab01xyz'" => array( 'HEX_NUMBER', 'IDENTIFIER', 'INVALID_INPUT', 'EOF' ),
 
 	// DECIMAL numbers vs. identifiers
-	'123.456' => ['DECIMAL_NUMBER', 'EOF'],
-	'.123' => ['DECIMAL_NUMBER', 'EOF'],
-	'123.' => ['DECIMAL_NUMBER', 'EOF'],
-	'123.456abc' => ['DECIMAL_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
-	'.123abc' => ['DECIMAL_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
-	'123.abc' => ['DECIMAL_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
+	'123.456'    => array( 'DECIMAL_NUMBER', 'EOF' ),
+	'.123'       => array( 'DECIMAL_NUMBER', 'EOF' ),
+	'123.'       => array( 'DECIMAL_NUMBER', 'EOF' ),
+	'123.456abc' => array( 'DECIMAL_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
+	'.123abc'    => array( 'DECIMAL_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
+	'123.abc'    => array( 'DECIMAL_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
 
 	// FLOAT numbers vs. identifiers
-	'1e10' => ['FLOAT_NUMBER', 'EOF'],
-	'1e+10' => ['FLOAT_NUMBER', 'EOF'],
-	'1e-10' => ['FLOAT_NUMBER', 'EOF'],
-	'.1e10' => ['FLOAT_NUMBER', 'EOF'],
-	'.1e+10' => ['FLOAT_NUMBER', 'EOF'],
-	'.1e-10' => ['FLOAT_NUMBER', 'EOF'],
-	'1.1e10' => ['FLOAT_NUMBER', 'EOF'],
-	'1.1e-10' => ['FLOAT_NUMBER', 'EOF'],
-	'1.1e+10' => ['FLOAT_NUMBER', 'EOF'],
-	'1e10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier (this differs from INT/BIN/HEX numbers)
-	'1e+10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
-	'1e-10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
-	'.1e10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
-	'.1e+10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
-	'.1e-10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
-	'1.1e10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
-	'1.1e+10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
-	'1.1e-10abc' => ['FLOAT_NUMBER', 'IDENTIFIER', 'EOF'], // not identifier
+	'1e10'       => array( 'FLOAT_NUMBER', 'EOF' ),
+	'1e+10'      => array( 'FLOAT_NUMBER', 'EOF' ),
+	'1e-10'      => array( 'FLOAT_NUMBER', 'EOF' ),
+	'.1e10'      => array( 'FLOAT_NUMBER', 'EOF' ),
+	'.1e+10'     => array( 'FLOAT_NUMBER', 'EOF' ),
+	'.1e-10'     => array( 'FLOAT_NUMBER', 'EOF' ),
+	'1.1e10'     => array( 'FLOAT_NUMBER', 'EOF' ),
+	'1.1e-10'    => array( 'FLOAT_NUMBER', 'EOF' ),
+	'1.1e+10'    => array( 'FLOAT_NUMBER', 'EOF' ),
+	'1e10abc'    => array( 'FLOAT_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier (this differs from INT/BIN/HEX numbers)
+	'1e+10abc'   => array( 'FLOAT_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
+	'1e-10abc'   => array( 'FLOAT_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
+	'.1e10abc'   => array( 'FLOAT_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
+	'.1e+10abc'  => array( 'FLOAT_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
+	'.1e-10abc'  => array( 'FLOAT_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
+	'1.1e10abc'  => array( 'FLOAT_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
+	'1.1e+10abc' => array( 'FLOAT_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
+	'1.1e-10abc' => array( 'FLOAT_NUMBER', 'IDENTIFIER', 'EOF' ), // not identifier
 
 	// Non-numbers
-	'.SELECT' => ['DOT_SYMBOL', 'IDENTIFIER', 'EOF'], // not decimal or float
-	'1+e10' => ['INT_NUMBER', 'PLUS_OPERATOR', 'IDENTIFIER', 'EOF'], // not float
-	'1-e10' => ['INT_NUMBER', 'MINUS_OPERATOR', 'IDENTIFIER', 'EOF'], // not float
-];
+	'.SELECT'    => array( 'DOT_SYMBOL', 'IDENTIFIER', 'EOF' ), // not decimal or float
+	'1+e10'      => array( 'INT_NUMBER', 'PLUS_OPERATOR', 'IDENTIFIER', 'EOF' ), // not float
+	'1-e10'      => array( 'INT_NUMBER', 'MINUS_OPERATOR', 'IDENTIFIER', 'EOF' ), // not float
+);
 
 $failures = 0;
-foreach ($tests as $input => $expected) {
-	$tokens = tokenizeQuery($input);
-	$token_names = array_map(function ($token) {
-		return $token->getName();
-	}, $tokens);
-	if ($token_names !== $expected) {
+foreach ( $tests as $input => $expected ) {
+	$tokens      = tokenize_query( $input );
+	$token_names = array_map(
+		function ( $token ) {
+			return $token->get_name();
+		},
+		$tokens
+	);
+	if ( $token_names !== $expected ) {
 		$failures += 1;
 		echo "\nFailed test for input: $input\n";
-		echo "  Expected: ", implode(', ', $expected), "\n";
-		echo "  Actual:   ", implode(', ', $token_names), "\n";
+		echo '  Expected: ', implode( ', ', $expected ), "\n";
+		echo '  Actual:   ', implode( ', ', $token_names ), "\n";
 	}
 }
-if ($failures > 0) {
+if ( $failures > 0 ) {
 	echo "\n$failures tests failed!\n";
 }
-

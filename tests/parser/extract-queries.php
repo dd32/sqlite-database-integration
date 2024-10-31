@@ -11,15 +11,15 @@
  */
 
 // Comments and other prefixes to skip:
-$prefixes = [
+$prefixes = array(
 	'#',
 	'--',
 	'{',
 	'}',
-];
+);
 
 // List of mysqltest and MySQL client commands:
-$commands = [
+$commands = array(
 	'append_file',
 	'assert',
 	'cat_file',
@@ -122,47 +122,47 @@ $commands = [
 	'wait_for_slave_to_stop',
 	'while',
 	'write_file',
-];
+);
 
 // Build regex patterns to skip mysqltest-specific constructs:
-$prefixesPattern =
+$prefixes_pattern =
 	'('
 	. implode(
 		'|',
 		array_map(
-			function ($prefix) {
-				return preg_quote($prefix, '/');
+			function ( $prefix ) {
+				return preg_quote( $prefix, '/' );
 			},
 			$prefixes
 		)
 	)
 	. ')';
 
-$commandsPattern =
+$commands_pattern =
 	'('
 	. implode(
 		'|',
 		array_map(
-			function ($command) {
-				return preg_quote($command, '/');
+			function ( $command ) {
+				return preg_quote( $command, '/' );
 			},
 			$commands
 		)
 	)
 	. ')(\s+|\(|$)';
 
-$skipPattern = "/^($prefixesPattern|$commandsPattern)/i";
+$skip_pattern = "/^($prefixes_pattern|$commands_pattern)/i";
 
 // Scan MySQL test files for SQL queries:
-$testsDir = __DIR__ . '/tmp/mysql-server-tests/mysql-test/t';
-if (!is_dir($testsDir)) {
-	echo "Directory '$testsDir' not found. Please, run 'download.sh' first.\n";
-	exit(1);
+$tests_dir = __DIR__ . '/tmp/mysql-server-tests/mysql-test/t';
+if ( ! is_dir( $tests_dir ) ) {
+	echo "Directory '$tests_dir' not found. Please, run 'download.sh' first.\n";
+	exit( 1 );
 }
 
-$queries = [];
-foreach (scandir($testsDir) as $i => $file) {
-	if (substr($file, -5) !== '.test') {
+$queries = array();
+foreach ( scandir( $tests_dir ) as $i => $file ) {
+	if ( substr( $file, -5 ) !== '.test' ) {
 		continue;
 	}
 
@@ -180,81 +180,82 @@ foreach (scandir($testsDir) as $i => $file) {
 	$is_disabled = false;
 
 	// Track whether we should skip the next query.
-	$skipNext = false;
+	$skip_next = false;
 
 	// Track character set when specified.
 	$charset = null;
 
-	$lines = 0;
-	$query = '';
-	$contents = utf8_encode(file_get_contents($testsDir . '/' . $file));
+	$lines    = 0;
+	$query    = '';
+	$contents = utf8_encode( file_get_contents( $tests_dir . '/' . $file ) );
 
 	// Skip mysqltest.test file that is focused on mysqltest constructs rather than SQL.
-	if ($file === 'mysqltest.test') {
+	if ( 'mysqltest.test' === $file ) {
 		continue;
 	}
 
 	// Remove "if" and "while" block, including nested ones, using a recursive regex.
 	// Extracting queries from them is not straightforward as they introduce a new scope for delimiters, etc.
-	$contents = preg_replace('/^\s*(?:if|while)\s*(\((?>(?1)|[^()])*+\))\s*(\{(?>(?2)|[^{}])*+})/ium', '', $contents);
+	$contents = preg_replace( '/^\s*(?:if|while)\s*(\((?>(?1)|[^()])*+\))\s*(\{(?>(?2)|[^{}])*+})/ium', '', $contents );
 
-	foreach (preg_split('/\R/u', $contents) as $line) {
+	foreach ( preg_split( '/\R/u', $contents ) as $line ) {
 		$lines += 1;
 
 		// Skip command bodies for perl, append_file, and write_file commands.
-		if ($command_body_terminator) {
-			if (trim($line) === $command_body_terminator) {
+		if ( $command_body_terminator ) {
+			if ( trim( $line ) === $command_body_terminator ) {
 				$command_body_terminator = null;
 			}
 			continue;
 		} elseif (
-			preg_match('/^(--)?perl(\s+(?P<terminator>\w+))?/', $line, $matches)
-			|| preg_match('/^(--)?(write_file|append_file)(\s+(\S+))?(\s+(?P<terminator>\w+))?/', $line, $matches)
+			preg_match( '/^(--)?perl(\s+(?P<terminator>\w+))?/', $line, $matches )
+			|| preg_match( '/^(--)?(write_file|append_file)(\s+(\S+))?(\s+(?P<terminator>\w+))?/', $line, $matches )
 		) {
 			$command_body_terminator = $matches['terminator'] ?? 'EOF';
 			continue;
 		}
 
 		// Skip disabled blocks.
-		if (!$is_disabled && str_starts_with(strtolower($line), '--disable_testcase')) {
+		if ( ! $is_disabled && str_starts_with( strtolower( $line ), '--disable_testcase' ) ) {
 			$is_disabled = true;
 			continue;
 		}
-		if ($is_disabled) {
-			if (str_starts_with(strtolower($line), '--enable_testcase')) {
+		if ( $is_disabled ) {
+			if ( str_starts_with( strtolower( $line ), '--enable_testcase' ) ) {
 				$is_disabled = false;
 			}
 			continue;
 		}
 
 		// Skip queries that are expected to result in parse errors for now.
-		if (str_starts_with(strtolower($line), '--error') || str_starts_with(strtolower($line), '-- error')) {
-			$skipNext = true;
+		if ( str_starts_with( strtolower( $line ), '--error' ) || str_starts_with( strtolower( $line ), '-- error' ) ) {
+			$skip_next = true;
 			continue;
 		}
 
 		// Track character set.
-		if (str_starts_with(strtolower($line), '--character_set')) {
-			$charset = trim(substr($line, strlen('--character_set')));
+		if ( str_starts_with( strtolower( $line ), '--character_set' ) ) {
+			$charset = trim( substr( $line, strlen( '--character_set' ) ) );
 			continue;
 		}
 
 		// Convert line to UTF-8 if needed.
-		if ($charset) {
+		if ( $charset ) {
 			// PHP's mbstring doesn't seem to support TIS-620, so we need to convert it manually.
-			if ($charset === 'tis620') {
+			if ( 'tis620' === $charset ) {
 				$out = '';
-				for ($i = 0; $i < strlen($line); $i++) {
-					$ord = ord($line[$i]);
-					$out .= $ord >= 0xA1 && $ord <= 0xFB ? "&#" . (0x0E01 + $ord - 0xA1) . ";" : $line[$i];
+				for ( $i = 0; $i < strlen( $line ); $i++ ) {
+					$ord  = ord( $line[ $i ] );
+					$out .= $ord >= 0xA1 && $ord <= 0xFB ? '&#' . ( 0x0E01 + $ord - 0xA1 ) . ';' : $line[ $i ];
 				}
-				$line = mb_convert_encoding($out, 'utf-8', 'HTML-ENTITIES');;
+				$line = mb_convert_encoding( $out, 'utf-8', 'HTML-ENTITIES' );
+
 			} else {
-				$charset = $charset === 'utf8mb4' ? 'utf-8' : $charset;
-				$charset = $charset === 'ujis' ? 'euc-jp' : $charset;
+				$charset = 'utf8mb4' === $charset ? 'utf-8' : $charset;
+				$charset = 'ujis' === $charset ? 'euc-jp' : $charset;
 				try {
-					$line = mb_convert_encoding($line, 'utf-8', $charset);
-				} catch (Throwable $e) {
+					$line = mb_convert_encoding( $line, 'utf-8', $charset );
+				} catch ( Throwable $e ) {
 					echo "Failed to convert line $lines in $file from $charset to UTF-8: $line\n";
 				}
 			}
@@ -262,67 +263,67 @@ foreach (scandir($testsDir) as $i => $file) {
 
 		// Skip comments.
 		$char1 = $line[0] ?? null;
-		if ($char1 === '#') {
+		if ( '#' === $char1 ) {
 			continue;
 		}
 
 		// Skip '--' commands; convert "--delimiter <delimiter>" to "DELIMITER <delimiter>".
 		$char2 = $line[1] ?? null;
-		if ($char1 === '-' && $char2 === '-') {
-			if (str_starts_with(strtolower($line), '--delimiter')) {
-				$line = substr($line, 2); // remove '--'
+		if ( '-' === $char1 && '-' === $char2 ) {
+			if ( str_starts_with( strtolower( $line ), '--delimiter' ) ) {
+				$line = substr( $line, 2 ); // remove '--'
 			} else {
 				continue;
 			}
 		}
 
 		// Process line.
-		$line = trim($line);
-		for ($i = 0; $i < strlen($line); $i++) {
-			$char = $line[$i];
+		$line = trim( $line );
+		for ( $i = 0; $i < strlen( $line ); $i++ ) {
+			$char = $line[ $i ];
 
 			// Handle quotes.
-			if ($char === '\'' || $char === '"' || $char === '`') {
-				$prefix = substr($line, 0, $i);
-				$slashes = strlen($prefix) - strlen(rtrim($prefix, '\\'));
-				$is_escaped = $slashes % 2 === 1;
-				if (!$is_escaped) {
-					if ($quotes === null) {
+			if ( '\'' === $char || '"' === $char || '`' === $char ) {
+				$prefix     = substr( $line, 0, $i );
+				$slashes    = strlen( $prefix ) - strlen( rtrim( $prefix, '\\' ) );
+				$is_escaped = 1 === $slashes % 2;
+				if ( ! $is_escaped ) {
+					if ( null === $quotes ) {
 						$quotes = $char; // start
-					} elseif ($quotes === $char) {
+					} elseif ( $quotes === $char ) {
 						$quotes = null; // end
 					}
 				}
 			}
 
 			// Found delimiter - end query or command.
-			if ($char === $delimiter[0] && substr($line, $i, strlen($delimiter)) === $delimiter && $quotes === null) {
-				$i += strlen($delimiter) - 1;
-				$char = $line[$i] ?? null;
+			if ( $char === $delimiter[0] && substr( $line, $i, strlen( $delimiter ) ) === $delimiter && null === $quotes ) {
+				$i   += strlen( $delimiter ) - 1;
+				$char = $line[ $i ] ?? null;
 
 				// Handle "DELIMITER <delimiter>" command.
-				if (str_starts_with(strtolower($query), 'delimiter')) {
-					$delimiter = trim(substr($query, strlen('delimiter')));
-				} elseif (preg_match($skipPattern, $query)) {
+				if ( str_starts_with( strtolower( $query ), 'delimiter' ) ) {
+					$delimiter = trim( substr( $query, strlen( 'delimiter' ) ) );
+				} elseif ( preg_match( $skip_pattern, $query ) ) {
 					// skip commands
 				} else {
-					if (!$skipNext) {
-						$queries[$query] = true;
+					if ( ! $skip_next ) {
+						$queries[ $query ] = true;
 					}
 				}
-				$skipNext = false;
+				$skip_next = false;
 
 				$query = '';
 
 				// Skip whitespace after command.
-				$nextChar = $line[$i + 1] ?? null;
-				while ($nextChar !== null && ctype_space($nextChar)) {
-					$i++;
-					$nextChar = $line[$i + 1] ?? null;
+				$next_char = $line[ $i + 1 ] ?? null;
+				while ( null !== $next_char && ctype_space( $next_char ) ) {
+					++$i;
+					$next_char = $line[ $i + 1 ] ?? null;
 				}
 
 				// Skip comments after command.
-				if ($nextChar === '#' || ($nextChar === '-' && ($nextChar[$i + 1] ?? null) === '-')) {
+				if ( '#' === $next_char || ( '-' === $next_char && '-' === ( $next_char[ $i + 1 ] ?? null ) ) ) {
 					break;
 				}
 			} else {
@@ -331,18 +332,18 @@ foreach (scandir($testsDir) as $i => $file) {
 		}
 
 		// Preserve newlines.
-		if ($query !== '') {
+		if ( '' !== $query ) {
 			$query .= "\n";
 		}
 	}
 }
 
 // Save deduped queries to CSV.
-$dataDir = __DIR__ . '/data';
-if (!is_dir($dataDir)) {
-	mkdir($dataDir, 0777, true);
+$data_dir = __DIR__ . '/data';
+if ( ! is_dir( $data_dir ) ) {
+	mkdir( $data_dir, 0777, true );
 }
-$output = fopen($dataDir . '/queries.csv', 'w');
-foreach ($queries as $query => $_) {
-	fputcsv($output, [$query]);
+$output = fopen( $data_dir . '/queries.csv', 'w' );
+foreach ( $queries as $query => $_ ) {
+	fputcsv( $output, array( $query ) );
 }
