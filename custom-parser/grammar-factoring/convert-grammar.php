@@ -274,4 +274,10 @@ $full_grammar = array(
 );
 
 $php_array = export_as_php_var( $full_grammar );
-file_put_contents( GRAMMAR_FILE, "<?php\nreturn " . $php_array . ';' );
+file_put_contents(
+	GRAMMAR_FILE,
+	"<?php\n"
+	. "// THIS FILE IS GENERATED. DO NOT MODIFY IT MANUALLY.\n"
+	. "// phpcs:disable\n"
+	. "return $php_array;\n"
+);
