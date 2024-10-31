@@ -28583,7 +28583,7 @@
         "bnf": [
             [
                 "columnRef",
-                "EQUAL_OPERATOR",
+                "equal",
                 "%updateElement02"
             ]
         ]

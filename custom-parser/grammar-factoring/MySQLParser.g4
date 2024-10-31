@@ -4110,8 +4110,16 @@ updateList:
     updateElement (COMMA_SYMBOL updateElement)*
 ;
 
-updateElement:
+/*updateElement:
     columnRef EQUAL_OPERATOR (expr | DEFAULT_SYMBOL)
+;*/
+
+/*
+ * @FIX:
+ * Change "EQUAL_OPERATOR" to "equal" to add support for ":=".
+ */
+updateElement:
+    columnRef equal (expr | DEFAULT_SYMBOL)
 ;
 
 charsetClause:
