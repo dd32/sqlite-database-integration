@@ -1,5 +1,9 @@
 <?php
 
+require_once __DIR__ . '/../parser/MySQLLexer.php';
+
+const GRAMMAR_FILE = __DIR__ . '/../parser/grammar.php';
+
 // Convert the original MySQLParser.g4 grammar to a JSON format.
 // The grammar is also flattened and expanded to an ebnf-to-json-like format.
 // Additionally, it captures version specifiers to be used in the parser.
@@ -161,43 +165,90 @@ foreach ($flat_rules as $rule) {
 	$expanded[$rule['name']] = $rule;
 }
 
+foreach ($expanded as $i => $rule) {
+	if (is_string($rule['value'][0] ?? null)) {
+		$expanded[$i]['value'] = [$rule['value']];
+	}
+}
+
 //echo json_encode($expanded, JSON_PRETTY_PRINT); return;
 
-// 4. Unify naming with the ebnf-to-json format.
-function convert_name($name) {
-	$name_quantifier = $name[strlen($name) - 1];
-	if ($name_quantifier === '?') {
-		return substr($name, 0, -1) . '_zero_or_one';
-	} elseif ($name_quantifier === '*') {
-		return substr($name, 0, -1) . '_zero_or_more';
-	} elseif ($name_quantifier === '+') {
-		return substr($name, 0, -1) . '_one_or_more';
-	}
-	return $name;
-}
+// 4. Export the grammar as a PHP array.
+$grammar = $expanded;
 
-$unified = [];
-foreach ($expanded as $rule) {
-	$rule['name'] = convert_name($rule['name']);
-	foreach ($rule['value'] as $i => $branch) {
-		if (is_string($branch)) {
-			$rule['value'][$i] = convert_name($rule['value'][$i]);
-		} else {
-			foreach ($branch as $j => $subrule) {
-				if (is_string($subrule)) {
-					$rule['value'][$i][$j] = convert_name($rule['value'][$i][$j]);
-				}
+function export_as_php_var($var) {
+	if(is_array($var)) {
+		$array_notation = "[";
+		$keys = array_keys($var);
+		$last_key = end($keys);
+		$export_keys = json_encode(array_keys($var)) !== json_encode(range(0, count($var) - 1));
+		foreach($var as $key => $value) {
+			if($export_keys) {
+				$array_notation .= var_export($key, true) . "=>";
+			}
+			$array_notation .= export_as_php_var($value);
+			if($key !== $last_key) {
+				$array_notation .= ",";
 			}
 		}
+		$array_notation .= "]";
+		return $array_notation;
 	}
-
-	if (is_string($rule['value'][0] ?? null)) {
-		$rule['value'] = [$rule['value']];
-	}
-
-	$rule['bnf'] = $rule['value'];
-	unset($rule['value']);
-	$unified[] = $rule;
+	return var_export($var, true);
 }
 
-echo json_encode($unified, JSON_PRETTY_PRINT);
+// Lookup tables
+$rules_offset = 2000;
+$rule_id_by_name = [];
+$rule_index_by_name = [];
+foreach ($grammar as $rule) {
+	$rules_ids[] = $rule["name"];
+	$rule_index_by_name[$rule["name"]] = (count($rules_ids) - 1);
+	$rule_id_by_name[$rule["name"]] = $rule_index_by_name[$rule["name"]] + $rules_offset;
+	$compressed_grammar[$rule["name"]] = [];
+}
+
+// Convert rules ids and token ids to integers
+$compressed_grammar = [];
+foreach($grammar as $rule) {
+	$new_branches = [];
+	foreach($rule["value"] as $branch) {
+		$new_branch = [];
+		foreach($branch as $i => $name) {
+			$is_terminal = !isset($rule_id_by_name[$name]);
+			if($is_terminal) {
+				$new_branch[] = MySQLLexer::getTokenId($name);
+			} else {
+				// Use rule id to avoid conflicts with token ids
+				$new_branch[] = $rule_id_by_name[$name];
+			}
+		}
+		$new_branches[] = $new_branch;
+	}
+	// Use rule index
+	$compressed_grammar[$rule_index_by_name[$rule["name"]]] = $new_branches;
+}
+
+// Compress the fragment rules names – they take a lot of disk space and are
+// inlined in the final parse tree anyway.
+$last_fragment = 1;
+foreach($rules_ids as $id => $name) {
+	if(
+		$name[0] === '%' ||
+		str_ends_with($name, '?') ||
+		str_ends_with($name, '*') ||
+		str_ends_with($name, '+')
+	) {
+		$rules_ids[$id] = '%f' . $last_fragment;
+		++$last_fragment;
+	}
+}
+
+$full_grammar = [
+	"rules_offset" => $rules_offset,
+	"rules_names" => $rules_ids,
+	"grammar" => $compressed_grammar
+];
+
+$php_array = export_as_php_var($full_grammar);
+file_put_contents(GRAMMAR_FILE, "<?php\nreturn " . $php_array . ";");
