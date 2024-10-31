@@ -71,14 +71,7 @@ class Parser {
 			}
 		}
 
-		$rule_name = str_replace(
-			array( '_zero_or_one', '_zero_or_more', '_one_or_more', '_rr', '_nested' ),
-			'',
-			$this->grammar->rule_names[ $rule_id ]
-		);
-
-		//var_dump($this->get_rule_name($rule_id));
-
+		$rule_name         = $this->grammar->rule_names[ $rule_id ];
 		$starting_position = $this->position;
 		foreach ( $rule as $branch ) {
 			$this->position = $starting_position;
