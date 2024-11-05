@@ -17,7 +17,7 @@ $start = microtime( true );
 while ( ( $query = fgetcsv( $handle ) ) !== false ) {
 	$query = $query[0];
 
-	$tokens = tokenize_query( $query );
+	$tokens = WP_MySQL_Lexer::tokenize( $query );
 	if ( empty( $tokens ) ) {
 		throw new Exception( 'Failed to tokenize query: ' . $query );
 	}
@@ -88,7 +88,7 @@ $tests = array(
 
 $failures = 0;
 foreach ( $tests as $input => $expected ) {
-	$tokens      = tokenize_query( $input );
+	$tokens      = WP_MySQL_Lexer::tokenize( $input );
 	$token_names = array_map(
 		function ( $token ) {
 			return $token->get_name();

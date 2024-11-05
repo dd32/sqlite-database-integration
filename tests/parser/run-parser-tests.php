@@ -49,7 +49,7 @@ while ( ( $query = fgetcsv( $handle ) ) !== false ) {
 	}
 
 	try {
-		$tokens = tokenize_query( $query );
+		$tokens = WP_MySQL_Lexer::tokenize( $query );
 		if ( empty( $tokens ) ) {
 			throw new Exception( 'Empty tokens' );
 		}

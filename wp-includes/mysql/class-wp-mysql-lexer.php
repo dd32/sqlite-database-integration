@@ -2114,6 +2114,16 @@ class WP_MySQL_Lexer {
 		$this->n              = $this->input[ $this->position + 1 ] ?? null;
 	}
 
+	public static function tokenize( $sql ): array {
+		$lexer  = new WP_MySQL_Lexer( $sql );
+		$tokens = array();
+		do {
+			$token    = $lexer->get_next_token();
+			$tokens[] = $token;
+		} while ( WP_MySQL_Lexer::EOF !== $token->type );
+		return $tokens;
+	}
+
 	public function is_sql_mode_active( int $mode ): bool {
 		return ( $this->sql_modes & $mode ) !== 0;
 	}
@@ -2737,14 +2747,4 @@ class WP_MySQL_Lexer {
 		}
 		return self::INVALID_INPUT;
 	}
-}
-
-function tokenize_query( $sql ) {
-	$lexer  = new WP_MySQL_Lexer( $sql );
-	$tokens = array();
-	do {
-		$token    = $lexer->get_next_token();
-		$tokens[] = $token;
-	} while ( WP_MySQL_Lexer::EOF !== $token->type );
-	return $tokens;
 }
