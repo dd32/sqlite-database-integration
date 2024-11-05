@@ -211,6 +211,11 @@ foreach ( scandir( $tests_dir ) as $i => $file ) {
 		continue;
 	}
 
+	// Skip parser_stack.test file that is intended to cause parser stack overflow.
+	if ( 'parser_stack.test' === $file ) {
+		continue;
+	}
+
 	// Remove "if" and "while" block, including nested ones, using a recursive regex.
 	// Extracting queries from them is not straightforward as they introduce a new scope for delimiters, etc.
 	$contents = preg_replace( '/^\s*(?:if|while)\s*(\((?>(?1)|[^()])*+\))\s*(\{(?>(?2)|[^{}])*+})/ium', '', $contents );

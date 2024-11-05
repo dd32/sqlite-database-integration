@@ -39,16 +39,6 @@ while ( ( $query = fgetcsv( $handle ) ) !== false ) {
 		continue;
 	}
 
-	// Skip overflow queries for now.
-	if (
-		str_contains( $query, 'func_overflow()' )
-		|| str_contains( $query, 'proc_overflow()' )
-		|| str_contains( $query, 'table_overflow()' )
-		|| str_contains( $query, 'trigger_overflow' )
-	) {
-		continue;
-	}
-
 	try {
 		$tokens = WP_MySQL_Lexer::tokenize( $query );
 		if ( empty( $tokens ) ) {
