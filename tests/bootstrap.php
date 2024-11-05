@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/wp-sqlite-schema.php';
+require_once __DIR__ . '/../wp-includes/mysql/class-wp-mysql-token.php';
+require_once __DIR__ . '/../wp-includes/mysql/class-wp-mysql-lexer.php';
 require_once __DIR__ . '/../wp-includes/sqlite/class-wp-sqlite-query-rewriter.php';
 require_once __DIR__ . '/../wp-includes/sqlite/class-wp-sqlite-lexer.php';
 require_once __DIR__ . '/../wp-includes/sqlite/class-wp-sqlite-token.php';
