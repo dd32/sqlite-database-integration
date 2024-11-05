@@ -1,8 +1,8 @@
 <?php
 
-require_once __DIR__ . '/../../wp-includes/mysql/class-mysql-lexer.php';
+require_once __DIR__ . '/../wp-includes/mysql/class-wp-mysql-lexer.php';
 
-const GRAMMAR_FILE = __DIR__ . '/../../wp-includes/mysql/mysql-grammar.php';
+const GRAMMAR_FILE = __DIR__ . '/../wp-includes/mysql/mysql-grammar.php';
 
 // Convert the original MySQLParser.g4 grammar to a JSON format.
 // The grammar is also flattened and expanded to an ebnf-to-json-like format.
@@ -240,7 +240,7 @@ foreach ( $grammar as $rule ) {
 		foreach ( $branch as $i => $name ) {
 			$is_terminal = ! isset( $rule_id_by_name[ $name ] );
 			if ( $is_terminal ) {
-				$new_branch[] = MySQL_Lexer::get_token_id( $name );
+				$new_branch[] = WP_MySQL_Lexer::get_token_id( $name );
 			} else {
 				// Use rule id to avoid conflicts with token ids
 				$new_branch[] = $rule_id_by_name[ $name ];

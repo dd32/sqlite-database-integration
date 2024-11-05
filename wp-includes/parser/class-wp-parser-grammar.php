@@ -1,6 +1,6 @@
 <?php
 
-class Grammar {
+class WP_Parser_Grammar {
 	public $rules;
 	public $rule_names;
 	public $fragment_ids;

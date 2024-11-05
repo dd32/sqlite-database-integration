@@ -7,8 +7,12 @@ set_error_handler(
 	}
 );
 
-require_once __DIR__ . '/../../wp-includes/mysql/class-mysql-lexer.php';
-require_once __DIR__ . '/../../wp-includes/parser/class-parser.php';
+require_once __DIR__ . '/../../wp-includes/mysql/class-wp-mysql-token.php';
+require_once __DIR__ . '/../../wp-includes/mysql/class-wp-mysql-lexer.php';
+require_once __DIR__ . '/../../wp-includes/parser/class-wp-parser-grammar.php';
+require_once __DIR__ . '/../../wp-includes/parser/class-wp-parser-tree.php';
+require_once __DIR__ . '/../../wp-includes/parser/class-wp-parser.php';
+require_once __DIR__ . '/../../wp-includes/mysql/class-wp-mysql-parser.php';
 
 function getStats( $total, $failures, $exceptions ) {
 	return sprintf(
@@ -22,7 +26,7 @@ function getStats( $total, $failures, $exceptions ) {
 }
 
 $grammar_data = include __DIR__ . '/../../wp-includes/mysql/mysql-grammar.php';
-$grammar      = new Grammar( $grammar_data );
+$grammar      = new WP_Parser_Grammar( $grammar_data );
 
 $handle     = fopen( __DIR__ . '/data/queries.csv', 'r' );
 $i          = 1;
@@ -50,7 +54,7 @@ while ( ( $query = fgetcsv( $handle ) ) !== false ) {
 			throw new Exception( 'Empty tokens' );
 		}
 
-		$parser     = new Parser( $grammar, $tokens );
+		$parser     = new WP_MySQL_Parser( $grammar, $tokens );
 		$parse_tree = $parser->parse();
 		if ( null === $parse_tree ) {
 			$failures[] = $query;

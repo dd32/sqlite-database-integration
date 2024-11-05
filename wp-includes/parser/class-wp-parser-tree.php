@@ -1,6 +1,6 @@
 <?php
 
-class Parse_Tree {
+class WP_Parser_Tree {
 	public $rule_id;
 	public $rule_name;
 	public $children = array();
@@ -92,7 +92,7 @@ class Parse_Tree {
 
 	public function has_child( $rule_name ) {
 		foreach ( $this->children as $child ) {
-			if ( ( $child instanceof Parse_Tree && $child->rule_name === $rule_name ) ) {
+			if ( ( $child instanceof WP_Parser_Tree && $child->rule_name === $rule_name ) ) {
 				return true;
 			}
 		}
@@ -101,7 +101,7 @@ class Parse_Tree {
 
 	public function has_token( $token_id = null ) {
 		foreach ( $this->children as $child ) {
-			if ( $child instanceof MySQL_Token && (
+			if ( $child instanceof WP_MySQL_Token && (
 				null === $token_id ||
 				$child->type === $token_id
 			) ) {
@@ -113,7 +113,7 @@ class Parse_Tree {
 
 	public function get_token( $token_id = null ) {
 		foreach ( $this->children as $child ) {
-			if ( $child instanceof MySQL_Token && (
+			if ( $child instanceof WP_MySQL_Token && (
 				null === $token_id ||
 				$child->type === $token_id
 			) ) {
@@ -125,7 +125,7 @@ class Parse_Tree {
 
 	public function get_child( $rule_name = null ) {
 		foreach ( $this->children as $child ) {
-			if ( $child instanceof Parse_Tree && (
+			if ( $child instanceof WP_Parser_Tree && (
 				$child->rule_name === $rule_name ||
 				null === $rule_name
 			) ) {
@@ -160,7 +160,7 @@ class Parse_Tree {
 	public function get_children( $rule_name = null ) {
 		$matches = array();
 		foreach ( $this->children as $child ) {
-			if ( $child instanceof Parse_Tree && (
+			if ( $child instanceof WP_Parser_Tree && (
 				null === $rule_name ||
 				$child->rule_name === $rule_name
 			) ) {

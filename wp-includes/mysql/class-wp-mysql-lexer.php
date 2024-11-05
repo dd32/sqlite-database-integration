@@ -1,7 +1,5 @@
 <?php
 
-require_once __DIR__ . '/class-mysql-token.php';
-
 /**
  * This lexer is based on the MySQL Workbench lexer grammar.
  * See:
@@ -9,7 +7,7 @@ require_once __DIR__ . '/class-mysql-token.php';
  *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/grammars/predefined.tokens
  *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/mysql/MySQLBaseLexer.cpp
  */
-class MySQL_Lexer {
+class WP_MySQL_Lexer {
 	// Token channels
 	const CHANNEL_DEFAULT = 0;
 	const CHANNEL_HIDDEN  = 99;
@@ -2393,14 +2391,14 @@ class MySQL_Lexer {
 			}
 		} elseif ( null === $la ) {
 			$this->match_eof();
-			$this->token_instance = new MySQL_Token( self::EOF, '<EOF>' );
+			$this->token_instance = new WP_MySQL_Token( self::EOF, '<EOF>' );
 			return false;
 		} else {
 			$this->consume();
 			$this->type = self::INVALID_INPUT;
 		}
 
-		$this->token_instance = null === $this->type ? null : new MySQL_Token( $this->type, $this->text, $this->channel );
+		$this->token_instance = null === $this->type ? null : new WP_MySQL_Token( $this->type, $this->text, $this->channel );
 		return true;
 	}
 
@@ -2478,7 +2476,7 @@ class MySQL_Lexer {
 		}
 
 		// With "SQL_MODE_HIGH_NOT_PRECEDENCE" enabled, "NOT" needs to be emitted as a higher priority NOT2 symbol.
-		if ( self::NOT_SYMBOL === $this->type && $this->is_sql_mode_active( MySQL_Lexer::SQL_MODE_HIGH_NOT_PRECEDENCE ) ) {
+		if ( self::NOT_SYMBOL === $this->type && $this->is_sql_mode_active( self::SQL_MODE_HIGH_NOT_PRECEDENCE ) ) {
 			$this->type = self::NOT2_SYMBOL;
 		}
 
@@ -2742,11 +2740,11 @@ class MySQL_Lexer {
 }
 
 function tokenize_query( $sql ) {
-	$lexer  = new MySQL_Lexer( $sql );
+	$lexer  = new WP_MySQL_Lexer( $sql );
 	$tokens = array();
 	do {
 		$token    = $lexer->get_next_token();
 		$tokens[] = $token;
-	} while ( MySQL_Lexer::EOF !== $token->type );
+	} while ( WP_MySQL_Lexer::EOF !== $token->type );
 	return $tokens;
 }

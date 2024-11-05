@@ -1,8 +1,5 @@
 <?php
 
-require_once __DIR__ . '/class-grammar.php';
-require_once __DIR__ . '/class-parse-tree.php';
-
 /*
 @TODO:
 * ✅ Tokenize MySQL Queries
@@ -16,12 +13,12 @@ Possible exploration avenues:
 	whole lot of lookups
 */
 
-class Parser {
+class WP_Parser {
 	private $tokens;
 	private $position;
 	private $grammar;
 
-	public function __construct( Grammar $grammar, array $tokens ) {
+	public function __construct( WP_Parser_Grammar $grammar, array $tokens ) {
 		$this->grammar  = $grammar;
 		$this->tokens   = $tokens;
 		$this->position = 0;
@@ -43,7 +40,7 @@ class Parser {
 				return null;
 			}
 
-			if ( MySQL_Lexer::EMPTY_TOKEN === $rule_id ) {
+			if ( WP_MySQL_Lexer::EMPTY_TOKEN === $rule_id ) {
 				return true;
 			}
 
@@ -65,7 +62,7 @@ class Parser {
 			$token_id = $this->tokens[ $this->position ]->type;
 			if (
 				! isset( $this->grammar->lookahead_is_match_possible[ $rule_id ][ $token_id ] ) &&
-				! isset( $this->grammar->lookahead_is_match_possible[ $rule_id ][ MySQL_Lexer::EMPTY_TOKEN ] )
+				! isset( $this->grammar->lookahead_is_match_possible[ $rule_id ][ WP_MySQL_Lexer::EMPTY_TOKEN ] )
 			) {
 				return null;
 			}
@@ -75,7 +72,7 @@ class Parser {
 		$starting_position = $this->position;
 		foreach ( $rule as $branch ) {
 			$this->position = $starting_position;
-			$node           = new Parse_Tree( $rule_id, $rule_name );
+			$node           = new WP_Parser_Tree( $rule_id, $rule_name );
 			$branch_matches = true;
 			foreach ( $branch as $subrule_id ) {
 				$subnode = $this->parse_recursive( $subrule_id );
@@ -104,7 +101,7 @@ class Parser {
 			// we're in the wrong branch and need to leave matching to a later rule.
 			// For now, it's hard-coded, but we could extract it to a lookahead table.
 			$la = $this->tokens[ $this->position ] ?? null;
-			if ( $la && 'selectStatement' === $rule_name && MySQL_Lexer::INTO_SYMBOL === $la->type ) {
+			if ( $la && 'selectStatement' === $rule_name && WP_MySQL_Lexer::INTO_SYMBOL === $la->type ) {
 				$branch_matches = false;
 			}
 
@@ -127,7 +124,7 @@ class Parser {
 
 	private function get_rule_name( $id ) {
 		if ( $id <= $this->grammar->highest_terminal_id ) {
-			return MySQL_Lexer::get_token_name( $id );
+			return WP_MySQL_Lexer::get_token_name( $id );
 		}
 
 		return $this->grammar->get_rule_name( $id );
