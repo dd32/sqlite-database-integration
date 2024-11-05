@@ -1,14 +1,31 @@
 <?php
 
 /**
- * This script scans MySQL test files and extracts SQL queries from them.
+ * This script scans MySQL server test files, extracts SQL queries from them,
+ * and saves the queries in a CSV file under "tests/mysql/data/queries.csv".
+ *
+ * The test files first need to be downloaded from the MySQL server repository.
+ * See the "mysql-download-tests.sh" script for more details.
+ *
+ * USAGE:
+ *   php tests/tools/mysql-extract-queries.php
  *
  * The tests are written using The MySQL Test Framework:
  *   https://dev.mysql.com/doc/dev/mysql-server/latest/PAGE_MYSQL_TEST_RUN.html
  *
- * See alos the mysqltest Language Reference:
+ * See also the mysqltest Language Reference:
  *   https://dev.mysql.com/doc/dev/mysql-server/latest/PAGE_MYSQLTEST_LANGUAGE_REFERENCE.html
+ *
+ * At the moment, it extracts test queries from the main MySQL server tests directory
+ * under "mysql-test/t". We can extend it to include other directories as well.
+ *
+ * The script is written on a best-effort basis and may not cover all edge cases.
+ * In the future, we may consider writing a mysqltest format parser.
  */
+
+// Paths:
+$data_dir   = __DIR__ . '/../mysql/data';
+$query_file = $data_dir . '/queries.csv';
 
 // Comments and other prefixes to skip:
 $prefixes = array(
@@ -339,11 +356,10 @@ foreach ( scandir( $tests_dir ) as $i => $file ) {
 }
 
 // Save deduped queries to CSV.
-$data_dir = __DIR__ . '/../mysql/data';
 if ( ! is_dir( $data_dir ) ) {
 	mkdir( $data_dir, 0777, true );
 }
-$output = fopen( $data_dir . '/queries.csv', 'w' );
+$output = fopen( $query_file, 'w' );
 foreach ( $queries as $query => $_ ) {
 	fputcsv( $output, array( $query ) );
 }
