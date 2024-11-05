@@ -10,7 +10,7 @@ set_error_handler(
 require_once __DIR__ . '/../../wp-includes/mysql/class-wp-mysql-token.php';
 require_once __DIR__ . '/../../wp-includes/mysql/class-wp-mysql-lexer.php';
 
-$handle = fopen( __DIR__ . '/data/queries.csv', 'r' );
+$handle = fopen( __DIR__ . '/../mysql/data/queries.csv', 'r' );
 
 $i     = 1;
 $start = microtime( true );

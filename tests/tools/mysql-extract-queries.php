@@ -154,7 +154,7 @@ $commands_pattern =
 $skip_pattern = "/^($prefixes_pattern|$commands_pattern)/i";
 
 // Scan MySQL test files for SQL queries:
-$tests_dir = __DIR__ . '/tmp/mysql-server-tests/mysql-test/t';
+$tests_dir = __DIR__ . '/tmp/mysql-test/t';
 if ( ! is_dir( $tests_dir ) ) {
 	echo "Directory '$tests_dir' not found. Please, run 'download.sh' first.\n";
 	exit( 1 );
@@ -339,7 +339,7 @@ foreach ( scandir( $tests_dir ) as $i => $file ) {
 }
 
 // Save deduped queries to CSV.
-$data_dir = __DIR__ . '/data';
+$data_dir = __DIR__ . '/../mysql/data';
 if ( ! is_dir( $data_dir ) ) {
 	mkdir( $data_dir, 0777, true );
 }

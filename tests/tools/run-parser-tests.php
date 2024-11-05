@@ -28,7 +28,8 @@ function getStats( $total, $failures, $exceptions ) {
 $grammar_data = include __DIR__ . '/../../wp-includes/mysql/mysql-grammar.php';
 $grammar      = new WP_Parser_Grammar( $grammar_data );
 
-$handle     = fopen( __DIR__ . '/data/queries.csv', 'r' );
+$data_dir   = __DIR__ . '/../mysql/data';
+$handle     = fopen( "$data_dir/queries.csv", 'r' );
 $i          = 1;
 $failures   = array();
 $exceptions = array();
@@ -73,19 +74,19 @@ echo getStats( $i, count( $failures ), count( $exceptions ) ), PHP_EOL;
 
 // save stats
 file_put_contents(
-	__DIR__ . '/data/stats.txt',
+	"$data_dir/stats.txt",
 	getStats( $i, count( $failures ), count( $exceptions ) ) . "\n"
 );
 
 // save failures
-$file = fopen( __DIR__ . '/data/failures.csv', 'w' );
+$file = fopen( "$data_dir/failures.csv", 'w' );
 foreach ( $failures as $failure ) {
 	fputcsv( $file, array( $failure ) );
 }
 fclose( $file );
 
 // save exceptions
-$file = fopen( __DIR__ . '/data/exceptions.csv', 'w' );
+$file = fopen( "$data_dir/exceptions.csv", 'w' );
 foreach ( $exceptions as $exception ) {
 	fputcsv( $file, array( $exception ) );
 }
