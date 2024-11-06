@@ -40,16 +40,6 @@ class WP_MySQL_Lexer {
 	const PATTERN_UNQUOTED_IDENTIFIER = '[a-zA-Z0-9_$\x{80}-\x{ffff}]*[a-zA-Z_$\x{80}-\x{ffff}][a-zA-Z0-9_$\x{80}-\x{ffff}]*';
 
 	/**
-	 * Unquoted user-defined variables:
-	 *   https://dev.mysql.com/doc/refman/8.4/en/user-variables.html
-	 *
-	 * Rules:
-	 *   1. Starts with a '@'.
-	 *   2. Allowed following characters are ASCII a-z, A-Z, 0-9, ., $, _.
-	 */
-	const PATTER_UNQUOTED_USER_VARIABLE = '@[a-zA-Z0-9_$.]+';
-
-	/**
 	 * Tokens from the MySQL Workbench "predefined.tokens" list, including token numbers.
 	 * See:
 	 *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/grammars/predefined.tokens
@@ -2319,19 +2309,30 @@ class WP_MySQL_Lexer {
 			$this->consume();
 			$this->type = self::CLOSE_CURLY_SYMBOL;
 		} elseif ( '@' === $la ) {
+			$this->consume(); // Consume the '@'.
+
 			if ( '@' === $la2 ) {
-				$this->consume(); // Consume the '@'.
-				$this->consume(); // Consume the '@'.
+				$this->consume(); // Consume the second '@'.
 				$this->type = self::AT_AT_SIGN_SYMBOL;
-			} elseif ( preg_match( '/\G' . self::PATTER_UNQUOTED_USER_VARIABLE . '/u', $this->input, $matches, 0, $this->position ) ) {
-				$this->text      = $matches[0];
-				$this->position += strlen( $this->text );
-				$this->c         = $this->input[ $this->position ] ?? null;
-				$this->n         = $this->input[ $this->position + 1 ] ?? null;
-				$this->type      = self::AT_TEXT_SUFFIX;
 			} else {
-				$this->consume();
-				$this->type = self::AT_SIGN_SYMBOL;
+				/**
+				 * Check whether the '@' marks an unquoted user-defined variable:
+				 *   https://dev.mysql.com/doc/refman/8.4/en/user-variables.html
+				 *
+				 * Rules:
+				 *   1. Starts with a '@'.
+				 *   2. Allowed following characters are ASCII a-z, A-Z, 0-9, _, ., $.
+				 */
+				$length = strspn( $this->input, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.$', $this->position );
+				if ( $length > 0 ) {
+					$this->text      = substr( $this->input, $this->position, $length );
+					$this->position += $length;
+					$this->c         = $this->input[ $this->position ] ?? null;
+					$this->n         = $this->input[ $this->position + 1 ] ?? null;
+					$this->type      = self::AT_TEXT_SUFFIX;
+				} else {
+					$this->type = self::AT_SIGN_SYMBOL;
+				}
 			}
 		} elseif ( '?' === $la ) {
 			$this->consume();
@@ -2574,13 +2575,13 @@ class WP_MySQL_Lexer {
 			}
 
 			// Unclosed string - unexpected EOF.
-			if ( $quote !== ( $this->input[ $pos ] ?? null ) ) {
+			if ( ( $this->input[ $pos ] ?? null ) !== $quote ) {
 				$this->type = self::INVALID_INPUT;
 				return;
 			}
 
 			// Check if the quote is doubled.
-			if ( $quote === ( $this->input[ $pos + 1 ] ?? null ) ) {
+			if ( ( $this->input[ $pos + 1 ] ?? null ) === $quote ) {
 				$pos += 2;
 				continue;
 			}
