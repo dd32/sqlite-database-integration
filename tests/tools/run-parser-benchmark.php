@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * This script runs the MySQL parser on all queries from the MySQL server suite.
+ * It tracks parsing failures and exceptions and measures parsing performance.
+ * This is an end-to-end benchmark that includes lexing time in the results.
+ */
+
 // Throw exception if anything fails.
 set_error_handler(
 	function ( $severity, $message, $file, $line ) {
@@ -25,59 +31,50 @@ function getStats( $total, $failures, $exceptions ) {
 	);
 }
 
+// Load the MySQL grammar.
 $grammar_data = include __DIR__ . '/../../wp-includes/mysql/mysql-grammar.php';
 $grammar      = new WP_Parser_Grammar( $grammar_data );
 
-$data_dir   = __DIR__ . '/../mysql/data';
-$handle     = fopen( "$data_dir/queries.csv", 'r' );
-$i          = 1;
+// Load the queries.
+$data_dir = __DIR__ . '/../mysql/data';
+$handle   = fopen( "$data_dir/queries.csv", 'r' );
+$records  = array();
+while ( ( $record = fgetcsv( $handle ) ) !== false ) {
+	$records[] = $record;
+}
+
+// Run the parser.
 $failures   = array();
 $exceptions = array();
-while ( ( $query = fgetcsv( $handle ) ) !== false ) {
-	$query = $query[0];
+$start      = microtime( true );
+for ( $i = 1; $i < count( $records ); $i += 1 ) {
+	$query = $records[ $i ][0];
 	if ( null === $query ) {
 		continue;
 	}
 
 	try {
 		$tokens = WP_MySQL_Lexer::tokenize( $query );
-		if ( empty( $tokens ) ) {
-			throw new Exception( 'Empty tokens' );
+		if ( count( $tokens ) === 0 ) {
+			throw new Exception( 'Failed to tokenize query: ' . $query );
 		}
 
-		$parser     = new WP_MySQL_Parser( $grammar, $tokens );
-		$parse_tree = $parser->parse();
-		if ( null === $parse_tree ) {
+		$parser = new WP_MySQL_Parser( $grammar, $tokens );
+		$ast    = $parser->parse();
+		if ( null === $ast ) {
 			$failures[] = $query;
 		}
 	} catch ( Exception $e ) {
 		$exceptions[] = $query;
 	}
 
-	if ( 0 === $i % 1000 ) {
-		echo getStats( $i, count( $failures ), count( $exceptions ) ), PHP_EOL;
+	if ( $i > 0 && 0 === $i % 1000 ) {
+		echo getStats( $i, count( $failures ), count( $exceptions ) ), "\n";
 	}
-	++$i;
 }
+$duration = microtime( true ) - $start;
 
-echo getStats( $i, count( $failures ), count( $exceptions ) ), PHP_EOL;
+echo getStats( $i, count( $failures ), count( $exceptions ) ), "\n";
 
-// save stats
-file_put_contents(
-	"$data_dir/stats.txt",
-	getStats( $i, count( $failures ), count( $exceptions ) ) . "\n"
-);
-
-// save failures
-$file = fopen( "$data_dir/failures.csv", 'w' );
-foreach ( $failures as $failure ) {
-	fputcsv( $file, array( $failure ) );
-}
-fclose( $file );
-
-// save exceptions
-$file = fopen( "$data_dir/exceptions.csv", 'w' );
-foreach ( $exceptions as $exception ) {
-	fputcsv( $file, array( $exception ) );
-}
-fclose( $file );
+// Print the results.
+printf( "\nParsed %d queries in %.5fs @ %d QPS.\n", $i, $duration, $i / $duration );
