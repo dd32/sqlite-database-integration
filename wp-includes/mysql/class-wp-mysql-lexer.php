@@ -50,22 +50,6 @@ class WP_MySQL_Lexer {
 	const PATTER_UNQUOTED_USER_VARIABLE = '@[a-zA-Z0-9_$.]+';
 
 	/**
-	 * Quoted literals and identifiers:
-	 *   https://dev.mysql.com/doc/refman/8.4/en/string-literals.html
-	 *   https://dev.mysql.com/doc/refman/8.4/en/identifiers.html
-	 *
-	 * Rules:
-	 *   1. Quotes can be escaped by doubling them ('', "", ``).
-	 *   2. Backslashes escape the next character, unless NO_BACKSLASH_ESCAPES is set.
-	 */
-	const PATTERN_SINGLE_QUOTED_TEXT                      = "'(?:''|\\\\.|[^'])*'";
-	const PATTERN_DOUBLE_QUOTED_TEXT                      = '"(?:""|\\\\.|[^"])*"';
-	const PATTERN_BACKTICK_QUOTED_ID                      = '`(?:``|\\\\.|[^`])*`';
-	const PATTERN_SINGLE_QUOTED_TEXT_NO_BACKSLASH_ESCAPES = "'(?:''|[^'])*'";
-	const PATTERN_DOUBLE_QUOTED_TEXT_NO_BACKSLASH_ESCAPES = '"(?:""|[^"])*"';
-	const PATTERN_BACKTICK_QUOTED_ID_NO_BACKSLASH_ESCAPES = '`(?:``|[^`])*`';
-
-	/**
 	 * Tokens from the MySQL Workbench "predefined.tokens" list, including token numbers.
 	 * See:
 	 *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/grammars/predefined.tokens
@@ -2166,12 +2150,8 @@ class WP_MySQL_Lexer {
 		$la  = $this->c;
 		$la2 = $this->n;
 
-		if ( "'" === $la ) {
-			$this->single_quoted_text();
-		} elseif ( '"' === $la ) {
-			$this->double_quoted_text();
-		} elseif ( '`' === $la ) {
-			$this->back_tick_quoted_id();
+		if ( "'" === $la || '"' === $la || '`' === $la ) {
+			$this->quoted_text( $la );
 		} elseif ( $this->is_digit( $la ) ) {
 			$this->number();
 		} elseif ( '.' === $la ) {
@@ -2379,7 +2359,7 @@ class WP_MySQL_Lexer {
 		} elseif ( ( 'n' === $la || 'N' === $la ) && "'" === $la2 ) {
 			$prefix = $la;
 			$this->consume(); // n/N
-			$this->single_quoted_text();
+			$this->quoted_text( "'" );
 			if ( self::SINGLE_QUOTED_TEXT === $this->type ) {
 				$this->text = $prefix . $this->text;
 				$this->type = self::NCHAR_TEXT;
@@ -2556,54 +2536,70 @@ class WP_MySQL_Lexer {
 		}
 	}
 
-	protected function single_quoted_text() {
-		$pattern = $this->is_sql_mode_active( self::SQL_MODE_NO_BACKSLASH_ESCAPES )
-			? self::PATTERN_SINGLE_QUOTED_TEXT_NO_BACKSLASH_ESCAPES
-			: self::PATTERN_SINGLE_QUOTED_TEXT;
+	/**
+	 * Quoted literals and identifiers:
+	 *   https://dev.mysql.com/doc/refman/8.4/en/string-literals.html
+	 *   https://dev.mysql.com/doc/refman/8.4/en/identifiers.html
+	 *
+	 * Rules:
+	 *   1. Quotes can be escaped by doubling them ('', "", ``).
+	 *   2. Backslashes escape the next character, unless NO_BACKSLASH_ESCAPES is set.
+	 *
+	 * @param string $quote The quote character - ', ", or `.
+	 */
+	protected function quoted_text( string $quote ) {
+		$this->consume(); // Consume the quote.
 
-		if ( preg_match( '/\G' . $pattern . '/u', $this->input, $matches, 0, $this->position ) ) {
-			$this->text      = $matches[0];
-			$this->position += strlen( $this->text );
-			$this->c         = $this->input[ $this->position ] ?? null;
-			$this->n         = $this->input[ $this->position + 1 ] ?? null;
-			$this->type      = self::SINGLE_QUOTED_TEXT;
-		} else {
-			$this->consume();
-			$this->type = self::INVALID_INPUT;
+		$no_backslash_escapes = $this->is_sql_mode_active(
+			self::SQL_MODE_NO_BACKSLASH_ESCAPES
+		);
+
+		// We need to look for the closing quote in a loop, as it can be escaped,
+		// in which case the escape sequence is consumed and the loop continues.
+		$pos = $this->position;
+		while ( true ) {
+			$pos += strcspn( $this->input, $quote, $pos );
+
+			// Quotes can be escaped with a "\", except when NO_BACKSLASH_ESCAPES
+			// is set, in which case it is treated as a regular character.
+			//
+			// The quote is escaped only when the number of preceding backslashes
+			// is odd, as since a "\\" is simply an escaped backslash character.
+			if ( ! $no_backslash_escapes ) {
+				for ($i = 0; '\\' === $this->input[ $pos - $i - 1 ]; $i += 1);
+				if ( 1 === $i % 2 ) {
+					$pos += 1;
+					continue;
+				}
+			}
+
+			// Unclosed string - unexpected EOF.
+			if ( $quote !== ( $this->input[ $pos ] ?? null ) ) {
+				$this->type = self::INVALID_INPUT;
+				return;
+			}
+
+			// Check if the quote is doubled.
+			if ( $quote === ( $this->input[ $pos + 1 ] ?? null ) ) {
+				$pos += 2;
+				continue;
+			}
+
+			break;
 		}
-	}
+		$pos += 1;
 
-	protected function double_quoted_text() {
-		$pattern = $this->is_sql_mode_active( self::SQL_MODE_NO_BACKSLASH_ESCAPES )
-			? self::PATTERN_DOUBLE_QUOTED_TEXT_NO_BACKSLASH_ESCAPES
-			: self::PATTERN_DOUBLE_QUOTED_TEXT;
+		$this->text    .= substr( $this->input, $this->position, $pos - $this->position );
+		$this->position = $pos;
+		$this->c        = $this->input[ $this->position ] ?? null;
+		$this->n        = $this->input[ $this->position + 1 ] ?? null;
 
-		if ( preg_match( '/\G' . $pattern . '/u', $this->input, $matches, 0, $this->position ) ) {
-			$this->text      = $matches[0];
-			$this->position += strlen( $this->text );
-			$this->c         = $this->input[ $this->position ] ?? null;
-			$this->n         = $this->input[ $this->position + 1 ] ?? null;
-			$this->type      = self::DOUBLE_QUOTED_TEXT;
+		if ( '`' === $quote ) {
+			$this->type = self::BACK_TICK_QUOTED_ID;
+		} elseif ( '"' === $quote ) {
+			$this->type = self::DOUBLE_QUOTED_TEXT;
 		} else {
-			$this->consume();
-			$this->type = self::INVALID_INPUT;
-		}
-	}
-
-	protected function back_tick_quoted_id() {
-		$pattern = $this->is_sql_mode_active( self::SQL_MODE_NO_BACKSLASH_ESCAPES )
-			? self::PATTERN_BACKTICK_QUOTED_ID_NO_BACKSLASH_ESCAPES
-			: self::PATTERN_BACKTICK_QUOTED_ID;
-
-		if ( preg_match( '/\G' . $pattern . '/u', $this->input, $matches, 0, $this->position ) ) {
-			$this->text      = $matches[0];
-			$this->position += strlen( $this->text );
-			$this->c         = $this->input[ $this->position ] ?? null;
-			$this->n         = $this->input[ $this->position + 1 ] ?? null;
-			$this->type      = self::BACK_TICK_QUOTED_ID;
-		} else {
-			$this->consume();
-			$this->type = self::INVALID_INPUT;
+			$this->type = self::SINGLE_QUOTED_TEXT;
 		}
 	}
 
