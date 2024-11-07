@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/wp-sqlite-schema.php';
+require_once __DIR__ . '/../wp-includes/utf8-decoder.php';
 require_once __DIR__ . '/../wp-includes/mysql/class-wp-mysql-token.php';
 require_once __DIR__ . '/../wp-includes/mysql/class-wp-mysql-lexer.php';
 require_once __DIR__ . '/../wp-includes/parser/class-wp-parser-grammar.php';

@@ -12,6 +12,7 @@ set_error_handler(
 	}
 );
 
+require_once __DIR__ . '/../../wp-includes/utf8-decoder.php';
 require_once __DIR__ . '/../../wp-includes/mysql/class-wp-mysql-token.php';
 require_once __DIR__ . '/../../wp-includes/mysql/class-wp-mysql-lexer.php';
 require_once __DIR__ . '/../../wp-includes/parser/class-wp-parser.php';

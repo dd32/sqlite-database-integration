@@ -30,16 +30,6 @@ class WP_MySQL_Lexer {
 	);
 
 	/**
-	 * Unquoted identifiers:
-	 *   https://dev.mysql.com/doc/refman/8.4/en/identifiers.html
-	 *
-	 * Rules:
-	 *   1. Allowed characters are ASCII a-z, A-Z, 0-9, $, _ and Unicode \x{0080}-\x{ffff}.
-	 *   2. Unquoted identifiers may begin with a digit but may not consist solely of digits.
-	 */
-	const PATTERN_UNQUOTED_IDENTIFIER = '[a-zA-Z0-9_$\x{80}-\x{ffff}]*[a-zA-Z_$\x{80}-\x{ffff}][a-zA-Z0-9_$\x{80}-\x{ffff}]*';
-
-	/**
 	 * Tokens from the MySQL Workbench "predefined.tokens" list, including token numbers.
 	 * See:
 	 *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/grammars/predefined.tokens
@@ -2365,28 +2355,32 @@ class WP_MySQL_Lexer {
 				$this->text = $prefix . $this->text;
 				$this->type = self::NCHAR_TEXT;
 			}
-		} elseif ( preg_match( '/\G' . self::PATTERN_UNQUOTED_IDENTIFIER . '/u', $this->input, $matches, 0, $this->position ) ) {
-			$p               = $this->position - 1;
-			$this->text      = $matches[0];
-			$this->position += strlen( $this->text );
-			$this->c         = $this->input[ $this->position ] ?? null;
-			$this->n         = $this->input[ $this->position + 1 ] ?? null;
-
-			// When preceded by a dot, it is always an identifier.
-			if ( $p >= 0 && '.' === $this->input[ $p ] ) {
-				$this->type = self::IDENTIFIER;
-			} elseif ( '_' === $la && isset( self::UNDERSCORE_CHARSETS[ strtolower( $this->text ) ] ) ) {
-				$this->type = self::UNDERSCORE_CHARSET;
-			} else {
-				$this->identifier_or_keyword();
-			}
 		} elseif ( null === $la ) {
 			$this->match_eof();
 			$this->token_instance = new WP_MySQL_Token( self::EOF, '<EOF>' );
 			return false;
 		} else {
-			$this->consume();
-			$this->type = self::INVALID_INPUT;
+			$previous_position = $this->position - 1;
+			$bytes_parsed      = $this->parse_identifier();
+
+			if ( $bytes_parsed > 0 ) {
+				$this->text      = substr( $this->input, $this->position, $bytes_parsed );
+				$this->position += $bytes_parsed;
+				$this->c         = $this->input[ $this->position ] ?? null;
+				$this->n         = $this->input[ $this->position + 1 ] ?? null;
+
+				// When preceded by a dot, it is always an identifier.
+				if ( $previous_position >= 0 && '.' === $this->input[ $previous_position ] ) {
+					$this->type = self::IDENTIFIER;
+				} elseif ( '_' === $la && isset( self::UNDERSCORE_CHARSETS[ strtolower( $this->text ) ] ) ) {
+					$this->type = self::UNDERSCORE_CHARSET;
+				} else {
+					$this->identifier_or_keyword();
+				}
+			} else {
+				$this->consume();
+				$this->type = self::INVALID_INPUT;
+			}
 		}
 
 		$this->token_instance = null === $this->type ? null : new WP_MySQL_Token( $this->type, $this->text, $this->channel );
@@ -2410,6 +2404,58 @@ class WP_MySQL_Lexer {
 		} else {
 			throw new RuntimeException( 'Current character is not EOF.' );
 		}
+	}
+
+	/**
+	 * Unquoted identifiers:
+	 *   https://dev.mysql.com/doc/refman/8.4/en/identifiers.html
+	 *
+	 * Rules:
+	 *   1. Allowed characters are ASCII a-z, A-Z, 0-9, _, $, and Unicode \x{0080}-\x{ffff}.
+	 *   2. Unquoted identifiers may begin with a digit but may not consist solely of digits.
+	 */
+	private function parse_identifier(): int {
+		$byte_length = 0;
+
+		while ( true ) {
+			// First, let's try to parse an ASCII sequence.
+			$byte_length += strspn(
+				$this->input,
+				'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$',
+				$this->position + $byte_length
+			);
+
+			// Check if the following byte can be part of a multibyte character.
+			// If not, bail out early to avoid unnecessary UTF-8 decoding.
+			$byte = $this->input[ $this->position + $byte_length ] ?? null;
+			if ( null === $byte || ord( $byte ) < 128 ) {
+				break;
+			}
+
+			// Check the \x{0080}-\x{ffff} Unicode character range.
+			$codepoint = utf8_codepoint_at(
+				$this->input,
+				$this->position + $byte_length,
+				$bytes_parsed
+			);
+
+			if (
+				null === $codepoint
+				|| ! ( 0x80 <= $codepoint && 0xffff >= $codepoint )
+			) {
+				break;
+			}
+
+			$byte_length += $bytes_parsed;
+		}
+
+		// An identifier cannot consist solely of digits.
+		if (
+			$byte_length === strspn( $this->input, '0123456789', $this->position, $byte_length )
+		) {
+			return 0;
+		}
+		return $byte_length;
 	}
 
 	protected function identifier_or_keyword() {
@@ -2523,13 +2569,16 @@ class WP_MySQL_Lexer {
 			self::INT_NUMBER === $this->type
 			|| ( '0' === $this->text[0] && ( 'b' === $this->text[1] || 'x' === $this->text[1] ) );
 
-		if ( $possible_identifier_prefix && preg_match( '/\G' . self::PATTERN_UNQUOTED_IDENTIFIER . '/u', $this->input, $matches, 0, $start_position ) ) {
-			$end_position = $start_position + strlen( $matches[0] );
+		if ( $possible_identifier_prefix ) {
+			$position       = $this->position;
+			$this->position = $start_position;
+			$bytes_parsed   = $this->parse_identifier();
+			$this->position = $position;
 
 			// When matched more than the number, it's an identifier.
-			if ( $end_position > $this->position ) {
-				$this->text     = $matches[0];
-				$this->position = $end_position;
+			if ( $start_position + $bytes_parsed > $this->position ) {
+				$this->text     = substr( $this->input, $start_position, $bytes_parsed );
+				$this->position = $start_position + $bytes_parsed;
 				$this->c        = $this->input[ $this->position ] ?? null;
 				$this->n        = $this->input[ $this->position + 1 ] ?? null;
 				$this->type     = self::IDENTIFIER;
