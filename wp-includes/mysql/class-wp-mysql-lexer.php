@@ -20,14 +20,9 @@ class WP_MySQL_Lexer {
 	const SQL_MODE_IGNORE_SPACE         = 1 << 3;
 	const SQL_MODE_NO_BACKSLASH_ESCAPES = 1 << 4;
 
-	// Whitespace characters
-	const WHITESPACES = array(
-		' '  => true,
-		"\t" => true,
-		"\n" => true,
-		"\r" => true,
-		"\f" => true,
-	);
+	// Character masks for input matching
+	const WHITESPACE_MASK = " \t\n\r\f";
+	const DIGIT_MASK      = '0123456789';
 
 	/**
 	 * Tokens from the MySQL Workbench "predefined.tokens" list, including token numbers.
@@ -2318,10 +2313,8 @@ class WP_MySQL_Lexer {
 		} elseif ( '#' === $la ) {
 			$this->line_comment();
 		} elseif ( $this->is_whitespace( $la ) ) {
-			while ( $this->is_whitespace( $this->input[ $this->position ] ?? '' ) ) {
-				$this->position += 1;
-			}
-			$this->channel = self::CHANNEL_HIDDEN;
+			$this->position += strspn( $this->input, self::WHITESPACE_MASK, $this->position );
+			$this->channel   = self::CHANNEL_HIDDEN;
 		} elseif ( '0' === $la && ( 'x' === $la2 || 'b' === $la2 ) ) {
 			$this->number();
 		} elseif ( ( 'x' === $la || 'X' === $la || 'b' === $la || 'B' === $la ) && "'" === $la2 ) {
@@ -2417,7 +2410,7 @@ class WP_MySQL_Lexer {
 
 		// An identifier cannot consist solely of digits.
 		if (
-			strspn( $this->input, '0123456789', $this->position, $byte_length ) === $byte_length
+			strspn( $this->input, self::DIGIT_MASK, $this->position, $byte_length ) === $byte_length
 		) {
 			return 0;
 		}
@@ -2466,11 +2459,8 @@ class WP_MySQL_Lexer {
 		// Determine function calls.
 		if ( isset( self::FUNCTIONS[ $this->type ] ) ) {
 			// Skip any whitespace character if the SQL mode says they should be ignored.
-			$i = 1;
 			if ( $this->is_sql_mode_active( self::SQL_MODE_IGNORE_SPACE ) ) {
-				while ( $this->is_whitespace( $this->input[ $this->position ] ?? null ) ) {
-					++$i;
-				}
+				$this->position += strspn( $this->input, self::WHITESPACE_MASK, $this->position );
 			}
 			if ( '(' !== ( $this->input[ $this->position ] ?? null ) ) {
 				$this->type = self::IDENTIFIER;
@@ -2511,9 +2501,7 @@ class WP_MySQL_Lexer {
 			if ( '.' === ( $this->input[ $this->position ] ?? null ) ) {
 				$this->position += 1;
 				$this->type      = self::DECIMAL_NUMBER;
-				while ( $this->is_digit( $this->input[ $this->position ] ?? null ) ) {
-					$this->position += 1;
-				}
+				$this->position += strspn( $this->input, self::DIGIT_MASK, $this->position );
 			}
 
 			// 3. When exponent is present, it's a float number.
@@ -2526,10 +2514,8 @@ class WP_MySQL_Lexer {
 			if ( $has_exponent ) {
 				$this->position += 1; // Consume the 'e' or 'E'.
 				$this->position += 1; // Consume the '+', '-', or digit.
-				while ( $this->is_digit( $this->input[ $this->position ] ?? null ) ) {
-					$this->position += 1;
-				}
-				$this->type = self::FLOAT_NUMBER;
+				$this->position += strspn( $this->input, self::DIGIT_MASK, $this->position );
+				$this->type      = self::FLOAT_NUMBER;
 			}
 		}
 
@@ -2623,18 +2609,8 @@ class WP_MySQL_Lexer {
 		$is_quoted = 'x' === strtolower( $this->input[ $this->position ] ?? null )
 			&& "'" === ( $this->input[ $this->position + 1 ] ?? null );
 
-		// Consume "0x" or "x'".
-		$this->position += 2;
-
-		$current_byte = $this->input[ $this->position ] ?? null;
-		while (
-			( $current_byte >= '0' && $current_byte <= '9' )
-			|| ( $current_byte >= 'a' && $current_byte <= 'f' )
-			|| ( $current_byte >= 'A' && $current_byte <= 'F' )
-		) {
-			$this->position += 1;
-			$current_byte    = $this->input[ $this->position ] ?? null;
-		}
+		$this->position += 2; // Consume "0x" or "x'".
+		$this->position += strspn( $this->input, '0123456789abcdefABCDEF', $this->position );
 
 		if ( $is_quoted ) {
 			$this->position += 1; // Consume the "'".
@@ -2647,14 +2623,8 @@ class WP_MySQL_Lexer {
 		$is_quoted = 'b' === strtolower( $this->input[ $this->position ] ?? null )
 			&& "'" === ( $this->input[ $this->position + 1 ] ?? null );
 
-		// Consume "0b" or "b'".
-		$this->position += 2;
-
-		$current_byte = $this->input[ $this->position ] ?? null;
-		while ( '0' === $current_byte || '1' === $current_byte ) {
-			$this->position += 1;
-			$current_byte    = $this->input[ $this->position ] ?? null;
-		}
+		$this->position += 2; // Consume "0b" or "b'".
+		$this->position += strspn( $this->input, '01', $this->position );
 
 		if ( $is_quoted ) {
 			$this->position += 1; // Consume the "'".
@@ -2664,28 +2634,20 @@ class WP_MySQL_Lexer {
 	}
 
 	protected function int_number() {
-		while ( $this->is_digit( $this->input[ $this->position ] ?? null ) ) {
-			$this->position += 1;
-		}
-		$this->type = self::INT_NUMBER;
+		$this->position += strspn( $this->input, self::DIGIT_MASK, $this->position );
+		$this->type      = self::INT_NUMBER;
 	}
 
 	protected function decimal_number() {
 		$this->position += 1; // Consume the '.'.
-		while ( $this->is_digit( $this->input[ $this->position ] ?? null ) ) {
-			$this->position += 1;
-		}
-		$this->type = self::DECIMAL_NUMBER;
+		$this->position += strspn( $this->input, self::DIGIT_MASK, $this->position );
+		$this->type      = self::DECIMAL_NUMBER;
 	}
 
 	protected function line_comment() {
-		$current_byte = $this->input[ $this->position ] ?? null;
-		while ( null !== $current_byte && "\n" !== $current_byte && "\r" !== $current_byte ) {
-			$this->position += 1;
-			$current_byte    = $this->input[ $this->position ] ?? null;
-		}
-		$this->type    = self::COMMENT;
-		$this->channel = self::CHANNEL_HIDDEN;
+		$this->position += strcspn( $this->input, "\r\n", $this->position );
+		$this->type      = self::COMMENT;
+		$this->channel   = self::CHANNEL_HIDDEN;
 	}
 
 	protected function block_comment() {
@@ -2702,14 +2664,9 @@ class WP_MySQL_Lexer {
 		$this->position += 3; // Consume the '/*!'.
 
 		// Check if the next 5 characters are digits.
-		$is_version_comment = true;
-		for ( $i = 0; $i < 5; $i++ ) {
-			if ( ! $this->is_digit( $this->input[ $this->position ] ?? null ) ) {
-				$is_version_comment = false;
-				break;
-			}
-			$this->position += 1; // Consume the digit.
-		}
+		$digit_count        = strspn( $this->input, self::DIGIT_MASK, $this->position, 5 );
+		$this->position    += $digit_count;
+		$is_version_comment = 5 === $digit_count;
 
 		// For version comments, extract the version number.
 		$version = $is_version_comment
@@ -2729,26 +2686,26 @@ class WP_MySQL_Lexer {
 	}
 
 	protected function skip_comment_content() {
-		while ( null !== ( $this->input[ $this->position ] ?? null ) ) {
-			if (
-				'*' === ( $this->input[ $this->position ] ?? null )
-				&& '/' === ( $this->input[ $this->position + 1 ] ?? null )
-			) {
-				$this->position += 2; // Consume the '*/'.
+		while ( true ) {
+			$this->position += strcspn( $this->input, '*', $this->position );
+			$this->position += 1; // Consume the '*'.
+			$byte            = $this->input[ $this->position ] ?? null;
+			if ( null === $byte ) {
 				break;
 			}
-			$this->position += 1;
+			if ( '/' === $byte ) {
+				$this->position += 1; // Consume the '/'.
+				break;
+			}
 		}
 	}
 
-	// Helper functions -----------------------------------------------------------------------------------------------------
-
 	private function is_whitespace( $char ) {
-		return isset( self::WHITESPACES[ $char ] );
+		return null !== $char && strspn( $char, self::WHITESPACE_MASK ) > 0;
 	}
 
 	private function is_digit( $char ) {
-		return $char >= '0' && $char <= '9';
+		return null !== $char && strspn( $char, self::DIGIT_MASK ) > 0;
 	}
 
 	private function determine_numeric_type( $text ) {
