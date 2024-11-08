@@ -48,7 +48,8 @@ class WP_MySQL_Server_Suite_Parser_Tests extends TestCase {
 		foreach ( $batch as $record ) {
 			$query = $record[0];
 
-			$tokens = WP_MySQL_Lexer::tokenize( $query );
+			$lexer  = new WP_MySQL_Lexer( $query );
+			$tokens = $lexer->remaining_tokens();
 			$this->assertNotEmpty( $tokens, "Failed to tokenize query: $query" );
 
 			$parser = new WP_MySQL_Parser( self::$grammar, $tokens );

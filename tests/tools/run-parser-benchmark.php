@@ -55,7 +55,8 @@ for ( $i = 1; $i < count( $records ); $i += 1 ) {
 	}
 
 	try {
-		$tokens = WP_MySQL_Lexer::tokenize( $query );
+		$lexer  = new WP_MySQL_Lexer( $query );
+		$tokens = $lexer->remaining_tokens();
 		if ( count( $tokens ) === 0 ) {
 			throw new Exception( 'Failed to tokenize query: ' . $query );
 		}

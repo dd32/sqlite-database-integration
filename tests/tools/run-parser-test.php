@@ -24,7 +24,8 @@ $grammar_data = include __DIR__ . '/../../wp-includes/mysql/mysql-grammar.php';
 $grammar      = new WP_Parser_Grammar( $grammar_data );
 
 // Edit the query below to test different inputs:
-$tokens = WP_MySQL_Lexer::tokenize( 'SELECT 1' );
+$lexer  = new WP_MySQL_Lexer( 'SELECT 1' );
+$tokens = $lexer->remaining_tokens();
 
 echo "Tokens:\n";
 foreach ( $tokens as $token ) {

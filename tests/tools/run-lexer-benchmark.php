@@ -27,7 +27,8 @@ while ( ( $record = fgetcsv( $handle ) ) !== false ) {
 $start = microtime( true );
 for ( $i = 0; $i < count( $records ); $i += 1 ) {
 	$query  = $records[ $i ][0];
-	$tokens = WP_MySQL_Lexer::tokenize( $query );
+	$lexer  = new WP_MySQL_Lexer( $query );
+	$tokens = $lexer->remaining_tokens();
 	if ( count( $tokens ) === 0 ) {
 		throw new Exception( 'Failed to tokenize query: ' . $query );
 	}

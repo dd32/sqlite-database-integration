@@ -13,11 +13,12 @@ class WP_MySQL_Lexer_Tests extends TestCase {
 	 * @dataProvider data_identifier_or_number
 	 */
 	public function test_identifier_or_number( $input, $expected ): void {
+		$lexer  = new WP_MySQL_Lexer( $input );
 		$actual = array_map(
 			function ( $token ) {
 				return $token->get_type();
 			},
-			WP_MySQL_Lexer::tokenize( $input )
+			$lexer->remaining_tokens()
 		);
 
 		// Compare token names to get more readable error messages.
