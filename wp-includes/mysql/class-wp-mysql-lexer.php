@@ -2052,7 +2052,6 @@ class WP_MySQL_Lexer {
 	protected $input;
 	protected $position                = 0;
 	protected $last_token_end_position = 0;
-	public $type;
 	protected $server_version;
 	protected $sql_modes;
 	protected $in_version_comment = false;
@@ -2105,7 +2104,7 @@ class WP_MySQL_Lexer {
 
 	public function get_next_token(): WP_MySQL_Token {
 		do {
-			$type = $this->read_next_token();
+			$type                          = $this->read_next_token();
 			$this->last_token_end_position = $this->position;
 		} while (
 			in_array(
@@ -2114,7 +2113,7 @@ class WP_MySQL_Lexer {
 					self::WHITESPACE,
 					self::COMMENT,
 					self::MYSQL_COMMENT_START,
-					self::MYSQL_COMMENT_END
+					self::MYSQL_COMMENT_END,
 				),
 				true
 			)
@@ -2123,30 +2122,30 @@ class WP_MySQL_Lexer {
 	}
 
 	private function read_next_token(): int {
-		$la  = $this->input[ $this->position ] ?? null;
-		$la2 = $this->input[ $this->position + 1 ] ?? null;
+		$la   = $this->input[ $this->position ] ?? null;
+		$la2  = $this->input[ $this->position + 1 ] ?? null;
 
 		if ( "'" === $la || '"' === $la || '`' === $la ) {
-			$this->quoted_text( $la );
+			$type = $this->read_quoted_text( $la );
 		} elseif ( $this->is_digit( $la ) ) {
-			$this->number();
+			$type = $this->read_number();
 		} elseif ( '.' === $la ) {
 			if ( $this->is_digit( $la2 ) ) {
-				$this->number();
+				$type = $this->read_number();
 			} else {
 				$this->position += 1;
-				$this->type      = self::DOT_SYMBOL;
+				$type            = self::DOT_SYMBOL;
 			}
 		} elseif ( '=' === $la ) {
 			$this->position += 1;
-			$this->type      = self::EQUAL_OPERATOR;
+			$type            = self::EQUAL_OPERATOR;
 		} elseif ( ':' === $la ) {
 			$this->position += 1; // Consume the ':'.
 			if ( '=' === $la2 ) {
 				$this->position += 1; // Consume the '='.
-				$this->type      = self::ASSIGN_OPERATOR;
+				$type            = self::ASSIGN_OPERATOR;
 			} else {
-				$this->type = self::COLON_SYMBOL;
+				$type = self::COLON_SYMBOL;
 			}
 		} elseif ( '<' === $la ) {
 			$this->position += 1; // Consume the '<'.
@@ -2154,135 +2153,137 @@ class WP_MySQL_Lexer {
 				$this->position += 1; // Consume the '='.
 				if ( '>' === ( $this->input[ $this->position ] ?? null ) ) {
 					$this->position += 1; // Consume the '>'.
-					$this->type      = self::NULL_SAFE_EQUAL_OPERATOR;
+					$type            = self::NULL_SAFE_EQUAL_OPERATOR;
 				} else {
-					$this->type = self::LESS_OR_EQUAL_OPERATOR;
+					$type = self::LESS_OR_EQUAL_OPERATOR;
 				}
 			} elseif ( '>' === $la2 ) {
 				$this->position += 1; // Consume the '>'.
-				$this->type      = self::NOT_EQUAL_OPERATOR;
+				$type            = self::NOT_EQUAL_OPERATOR;
 			} elseif ( '<' === $la2 ) {
 				$this->position += 1; // Consume the '<'.
-				$this->type      = self::SHIFT_LEFT_OPERATOR;
+				$type            = self::SHIFT_LEFT_OPERATOR;
 			} else {
-				$this->type = self::LESS_THAN_OPERATOR;
+				$type = self::LESS_THAN_OPERATOR;
 			}
 		} elseif ( '>' === $la ) {
 			$this->position += 1; // Consume the '>'.
 			if ( '=' === $la2 ) {
 				$this->position += 1; // Consume the '='.
-				$this->type      = self::GREATER_OR_EQUAL_OPERATOR;
+				$type            = self::GREATER_OR_EQUAL_OPERATOR;
 			} elseif ( '>' === $la2 ) {
 				$this->position += 1; // Consume the '>'.
-				$this->type      = self::SHIFT_RIGHT_OPERATOR;
+				$type            = self::SHIFT_RIGHT_OPERATOR;
 			} else {
-				$this->type = self::GREATER_THAN_OPERATOR;
+				$type = self::GREATER_THAN_OPERATOR;
 			}
 		} elseif ( '!' === $la ) {
 			$this->position += 1; // Consume the '!'.
 			if ( '=' === $la2 ) {
 				$this->position += 1; // Consume the '='.
-				$this->type      = self::NOT_EQUAL_OPERATOR;
+				$type            = self::NOT_EQUAL_OPERATOR;
 			} else {
-				$this->type = self::LOGICAL_NOT_OPERATOR;
+				$type = self::LOGICAL_NOT_OPERATOR;
 			}
 		} elseif ( '+' === $la ) {
 			$this->position += 1;
-			$this->type      = self::PLUS_OPERATOR;
+			$type            = self::PLUS_OPERATOR;
 		} elseif ( '-' === $la ) {
 			if ( '-' === $la2 && $this->is_whitespace( $this->input[ $this->position + 2 ] ?? null ) ) {
-				$this->line_comment();
+				$type = $this->read_line_comment();
 			} elseif ( '>' === $la2 ) {
 				$this->position += 2; // Consume the '->'.
 				if ( '>' === ( $this->input[ $this->position ] ?? null ) ) {
 					$this->position += 1; // Consume the '>'.
 					if ( $this->server_version >= 50713 ) {
-						$this->type = self::JSON_UNQUOTED_SEPARATOR_SYMBOL;
+						$type = self::JSON_UNQUOTED_SEPARATOR_SYMBOL;
 					} else {
-						$this->type = self::INVALID_INPUT;
+						$type = self::INVALID_INPUT;
 					}
 				} else {
 					if ( $this->server_version >= 50708 ) {
-						$this->type = self::JSON_SEPARATOR_SYMBOL;
+						$type = self::JSON_SEPARATOR_SYMBOL;
 					} else {
-						$this->type = self::INVALID_INPUT;
+						$type = self::INVALID_INPUT;
 					}
 				}
 			} else {
 				$this->position += 1; // Consume the '-'.
-				$this->type      = self::MINUS_OPERATOR;
+				$type            = self::MINUS_OPERATOR;
 			}
 		} elseif ( '*' === $la ) {
 			$this->position += 1;
 			if ( '/' === $la2 && $this->in_version_comment ) {
 				$this->position          += 1; // Consume the '/'.
-				$this->type               = self::MYSQL_COMMENT_END;
+				$type                     = self::MYSQL_COMMENT_END;
 				$this->in_version_comment = false;
 			} else {
-				$this->type = self::MULT_OPERATOR;
+				$type = self::MULT_OPERATOR;
 			}
 		} elseif ( '/' === $la ) {
 			if ( '*' === $la2 ) {
 				if ( '!' === ( $this->input[ $this->position + 2 ] ?? null ) ) {
-					$this->mysql_comment();
+					$type = $this->read_mysql_comment();
 				} else {
-					$this->block_comment();
+					$this->position += 2; // Consume the '/*'.
+					$this->read_comment_content();
+					$type = self::COMMENT;
 				}
 			} else {
 				$this->position += 1;
-				$this->type      = self::DIV_OPERATOR;
+				$type            = self::DIV_OPERATOR;
 			}
 		} elseif ( '%' === $la ) {
 			$this->position += 1;
-			$this->type      = self::MOD_OPERATOR;
+			$type            = self::MOD_OPERATOR;
 		} elseif ( '&' === $la ) {
 			$this->position += 1; // Consume the '&'.
 			if ( '&' === $la2 ) {
 				$this->position += 1; // Consume the '&'.
-				$this->type      = self::LOGICAL_AND_OPERATOR;
+				$type            = self::LOGICAL_AND_OPERATOR;
 			} else {
-				$this->type = self::BITWISE_AND_OPERATOR;
+				$type = self::BITWISE_AND_OPERATOR;
 			}
 		} elseif ( '^' === $la ) {
 			$this->position += 1;
-			$this->type      = self::BITWISE_XOR_OPERATOR;
+			$type            = self::BITWISE_XOR_OPERATOR;
 		} elseif ( '|' === $la ) {
 			$this->position += 1; // Consume the '|'.
 			if ( '|' === $la2 ) {
 				$this->position += 1; // Consume the '|'.
-				$this->type      = $this->is_sql_mode_active( self::SQL_MODE_PIPES_AS_CONCAT )
+				$type            = $this->is_sql_mode_active( self::SQL_MODE_PIPES_AS_CONCAT )
 					? self::CONCAT_PIPES_SYMBOL
 					: self::LOGICAL_OR_OPERATOR;
 			} else {
-				$this->type = self::BITWISE_OR_OPERATOR;
+				$type = self::BITWISE_OR_OPERATOR;
 			}
 		} elseif ( '~' === $la ) {
 			$this->position += 1;
-			$this->type      = self::BITWISE_NOT_OPERATOR;
+			$type            = self::BITWISE_NOT_OPERATOR;
 		} elseif ( ',' === $la ) {
 			$this->position += 1;
-			$this->type      = self::COMMA_SYMBOL;
+			$type            = self::COMMA_SYMBOL;
 		} elseif ( ';' === $la ) {
 			$this->position += 1;
-			$this->type      = self::SEMICOLON_SYMBOL;
+			$type            = self::SEMICOLON_SYMBOL;
 		} elseif ( '(' === $la ) {
 			$this->position += 1;
-			$this->type      = self::OPEN_PAR_SYMBOL;
+			$type            = self::OPEN_PAR_SYMBOL;
 		} elseif ( ')' === $la ) {
 			$this->position += 1;
-			$this->type      = self::CLOSE_PAR_SYMBOL;
+			$type            = self::CLOSE_PAR_SYMBOL;
 		} elseif ( '{' === $la ) {
 			$this->position += 1;
-			$this->type      = self::OPEN_CURLY_SYMBOL;
+			$type            = self::OPEN_CURLY_SYMBOL;
 		} elseif ( '}' === $la ) {
 			$this->position += 1;
-			$this->type      = self::CLOSE_CURLY_SYMBOL;
+			$type            = self::CLOSE_CURLY_SYMBOL;
 		} elseif ( '@' === $la ) {
 			$this->position += 1; // Consume the '@'.
 
 			if ( '@' === $la2 ) {
 				$this->position += 1; // Consume the second '@'.
-				$this->type      = self::AT_AT_SIGN_SYMBOL;
+				$type            = self::AT_AT_SIGN_SYMBOL;
 			} else {
 				/**
 				 * Check whether the '@' marks an unquoted user-defined variable:
@@ -2295,39 +2296,39 @@ class WP_MySQL_Lexer {
 				$length = strspn( $this->input, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.$', $this->position );
 				if ( $length > 0 ) {
 					$this->position += $length;
-					$this->type      = self::AT_TEXT_SUFFIX;
+					$type            = self::AT_TEXT_SUFFIX;
 				} else {
-					$this->type = self::AT_SIGN_SYMBOL;
+					$type = self::AT_SIGN_SYMBOL;
 				}
 			}
 		} elseif ( '?' === $la ) {
 			$this->position += 1;
-			$this->type      = self::PARAM_MARKER;
+			$type            = self::PARAM_MARKER;
 		} elseif ( '\\' === $la ) {
 			$this->position += 1; // Consume the '\'.
 			if ( 'N' === $la2 ) {
 				$this->position += 1; // Consume the 'N'.
-				$this->type      = self::NULL2_SYMBOL;
+				$type            = self::NULL2_SYMBOL;
 			} else {
-				$this->type = self::INVALID_INPUT;
+				$type = self::INVALID_INPUT;
 			}
 		} elseif ( '#' === $la ) {
-			$this->line_comment();
+			$type = $this->read_line_comment();
 		} elseif ( $this->is_whitespace( $la ) ) {
 			$this->position += strspn( $this->input, self::WHITESPACE_MASK, $this->position );
-			$this->type   = self::WHITESPACE;
+			$type            = self::WHITESPACE;
 		} elseif ( '0' === $la && ( 'x' === $la2 || 'b' === $la2 ) ) {
-			$this->number();
+			$type = $this->read_number();
 		} elseif ( ( 'x' === $la || 'X' === $la || 'b' === $la || 'B' === $la ) && "'" === $la2 ) {
-			$this->number();
+			$type = $this->read_number();
 		} elseif ( ( 'n' === $la || 'N' === $la ) && "'" === $la2 ) {
 			$this->position += 1; // n/N
-			$this->quoted_text( "'" );
-			if ( self::SINGLE_QUOTED_TEXT === $this->type ) {
-				$this->type = self::NCHAR_TEXT;
+			$type            = $this->read_quoted_text( "'" );
+			if ( self::SINGLE_QUOTED_TEXT === $type ) {
+				$type = self::NCHAR_TEXT;
 			}
 		} elseif ( null === $la ) {
-			$this->type = self::EOF;
+			$type = self::EOF;
 		} else {
 			$previous_position = $this->position - 1;
 			$bytes_parsed      = $this->parse_identifier();
@@ -2337,18 +2338,18 @@ class WP_MySQL_Lexer {
 
 				// When preceded by a dot, it is always an identifier.
 				if ( $previous_position >= 0 && '.' === $this->input[ $previous_position ] ) {
-					$this->type = self::IDENTIFIER;
+					$type = self::IDENTIFIER;
 				} elseif ( '_' === $la && isset( self::UNDERSCORE_CHARSETS[ strtolower( $this->get_text() ) ] ) ) {
-					$this->type = self::UNDERSCORE_CHARSET;
+					$type = self::UNDERSCORE_CHARSET;
 				} else {
-					$this->identifier_or_keyword();
+					$type = $this->determine_identifier_or_keyword_type( $this->get_text() );
 				}
 			} else {
 				$this->position += 1;
-				$this->type      = self::INVALID_INPUT;
+				$type            = self::INVALID_INPUT;
 			}
 		}
-		return $this->type;
+		return $type;
 	}
 
 	/**
@@ -2403,67 +2404,66 @@ class WP_MySQL_Lexer {
 		return $byte_length;
 	}
 
-	protected function identifier_or_keyword() {
-		$text = strtoupper( $this->get_text() );
+	protected function determine_identifier_or_keyword_type( string $value ): int {
+		$value = strtoupper( $value );
 
 		// Lookup the string in the token table.
-		$this->type = self::TOKENS[ $text ] ?? self::IDENTIFIER;
-		if ( self::IDENTIFIER === $this->type ) {
-			return;
+		$type = self::TOKENS[ $value ] ?? self::IDENTIFIER;
+		if ( self::IDENTIFIER === $type ) {
+			return self::IDENTIFIER;
 		}
 
 		// Apply MySQL server version specifics (positive number: >= <version>, negative number: < <version>).
-		if ( isset( self::VERSIONS[ $this->type ] ) ) {
-			$version = self::VERSIONS[ $this->type ];
+		if ( isset( self::VERSIONS[ $type ] ) ) {
+			$version = self::VERSIONS[ $type ];
 			if ( $this->server_version < $version || -$version >= $this->server_version ) {
-				$this->type = self::IDENTIFIER;
-				return;
+				return self::IDENTIFIER;
 			}
 		}
 
 		// Apply MySQL version ranges manually.
 		if (
-			self::MAX_STATEMENT_TIME_SYMBOL === $this->type
-			&& ( $this->server_version <= 50704 || $this->server_version >= 50708 )
+			self::MAX_STATEMENT_TIME_SYMBOL === $type
+			&& ! ( $this->server_version >= 50704 && $this->server_version < 50708 )
 		) {
-			$this->type = self::IDENTIFIER;
-			return;
-		} elseif (
-			self::NONBLOCKING_SYMBOL === $this->type
-			&& ( $this->server_version <= 50700 || $this->server_version >= 50706 )
+			return self::IDENTIFIER;
+		}
+
+		if (
+			self::NONBLOCKING_SYMBOL === $type
+			&& ! ( $this->server_version >= 50700 && $this->server_version < 50706 )
 		) {
-			$this->type = self::IDENTIFIER;
-			return;
-		} elseif (
-			self::REMOTE_SYMBOL === $this->type
-			&& ( $this->server_version < 80003 || $this->server_version >= 80014 )
+			return self::IDENTIFIER;
+		}
+
+		if (
+			self::REMOTE_SYMBOL === $type
+			&& ( $this->server_version >= 80003 && $this->server_version < 80014 )
 		) {
-			$this->type = self::IDENTIFIER;
-			return;
+			return self::IDENTIFIER;
 		}
 
 		// Determine function calls.
-		if ( isset( self::FUNCTIONS[ $this->type ] ) ) {
+		if ( isset( self::FUNCTIONS[ $type ] ) ) {
 			// Skip any whitespace character if the SQL mode says they should be ignored.
 			if ( $this->is_sql_mode_active( self::SQL_MODE_IGNORE_SPACE ) ) {
 				$this->position += strspn( $this->input, self::WHITESPACE_MASK, $this->position );
 			}
 			if ( '(' !== ( $this->input[ $this->position ] ?? null ) ) {
-				$this->type = self::IDENTIFIER;
-				return;
+				return self::IDENTIFIER;
 			}
 		}
 
 		// With "SQL_MODE_HIGH_NOT_PRECEDENCE" enabled, "NOT" needs to be emitted as a higher priority NOT2 symbol.
-		if ( self::NOT_SYMBOL === $this->type && $this->is_sql_mode_active( self::SQL_MODE_HIGH_NOT_PRECEDENCE ) ) {
-			$this->type = self::NOT2_SYMBOL;
+		if ( self::NOT_SYMBOL === $type && $this->is_sql_mode_active( self::SQL_MODE_HIGH_NOT_PRECEDENCE ) ) {
+			$type = self::NOT2_SYMBOL;
 		}
 
 		// Apply synonyms.
-		$this->type = self::SYNONYMS[ $this->type ] ?? $this->type;
+		return self::SYNONYMS[ $type ] ?? $type;
 	}
 
-	protected function number() {
+	protected function read_number(): int {
 		$start_position = $this->position;
 		$current_byte   = $this->input[ $this->position ] ?? null;
 		$next_byte      = $this->input[ $this->position + 1 ] ?? null;
@@ -2480,7 +2480,7 @@ class WP_MySQL_Lexer {
 			if ( $is_quoted ) {
 				$this->position += 1; // Consume the "'".
 			}
-			$this->type = self::HEX_NUMBER;
+			$type = self::HEX_NUMBER;
 		} elseif (
 			// BIN number in the form of 0bN.
 			( '0' === $current_byte && 'b' === $next_byte )
@@ -2493,18 +2493,18 @@ class WP_MySQL_Lexer {
 			if ( $is_quoted ) {
 				$this->position += 1; // Consume the "'".
 			}
-			$this->type = self::BIN_NUMBER;
+			$type = self::BIN_NUMBER;
 		} else {
 			// Here, we have a sequence starting with N or .N, where N is a digit.
 
 			// 1. Try integer first.
 			$this->position += strspn( $this->input, self::DIGIT_MASK, $this->position );
-			$this->type      = self::INT_NUMBER;
+			$type            = self::INT_NUMBER;
 
 			// 2. In case of N. or .N, it's a decimal or float number.
 			if ( '.' === ( $this->input[ $this->position ] ?? null ) ) {
 				$this->position += 1;
-				$this->type      = self::DECIMAL_NUMBER;
+				$type            = self::DECIMAL_NUMBER;
 				$this->position += strspn( $this->input, self::DIGIT_MASK, $this->position );
 			}
 
@@ -2519,7 +2519,7 @@ class WP_MySQL_Lexer {
 				$this->position += 1; // Consume the 'e' or 'E'.
 				$this->position += 1; // Consume the '+', '-', or digit.
 				$this->position += strspn( $this->input, self::DIGIT_MASK, $this->position );
-				$this->type      = self::FLOAT_NUMBER;
+				$type            = self::FLOAT_NUMBER;
 			}
 		}
 
@@ -2528,7 +2528,7 @@ class WP_MySQL_Lexer {
 		// considered an identifier... unless it's a float number, which ignores subsequent input.
 		$text                       = $this->get_text();
 		$possible_identifier_prefix =
-			self::INT_NUMBER === $this->type
+			self::INT_NUMBER === $type
 			|| ( '0' === $text[0] && ( 'b' === $text[1] || 'x' === $text[1] ) );
 
 		if ( $possible_identifier_prefix ) {
@@ -2540,9 +2540,10 @@ class WP_MySQL_Lexer {
 			// When matched more than the number, it's an identifier.
 			if ( $start_position + $bytes_parsed > $this->position ) {
 				$this->position = $start_position + $bytes_parsed;
-				$this->type     = self::IDENTIFIER;
+				$type           = self::IDENTIFIER;
 			}
 		}
+		return $type;
 	}
 
 	/**
@@ -2556,7 +2557,7 @@ class WP_MySQL_Lexer {
 	 *
 	 * @param string $quote The quote character - ', ", or `.
 	 */
-	protected function quoted_text( string $quote ) {
+	protected function read_quoted_text( string $quote ): int {
 		$this->position += 1; // Consume the quote.
 
 		$no_backslash_escapes = $this->is_sql_mode_active(
@@ -2584,8 +2585,7 @@ class WP_MySQL_Lexer {
 
 			// Unclosed string - unexpected EOF.
 			if ( ( $this->input[ $pos ] ?? null ) !== $quote ) {
-				$this->type = self::INVALID_INPUT;
-				return;
+				return self::INVALID_INPUT;
 			}
 
 			// Check if the quote is doubled.
@@ -2601,26 +2601,20 @@ class WP_MySQL_Lexer {
 		$this->position = $pos;
 
 		if ( '`' === $quote ) {
-			$this->type = self::BACK_TICK_QUOTED_ID;
+			return self::BACK_TICK_QUOTED_ID;
 		} elseif ( '"' === $quote ) {
-			$this->type = self::DOUBLE_QUOTED_TEXT;
+			return self::DOUBLE_QUOTED_TEXT;
 		} else {
-			$this->type = self::SINGLE_QUOTED_TEXT;
+			return self::SINGLE_QUOTED_TEXT;
 		}
 	}
 
-	protected function line_comment() {
+	protected function read_line_comment(): int {
 		$this->position += strcspn( $this->input, "\r\n", $this->position );
-		$this->type      = self::COMMENT;
+		return self::COMMENT;
 	}
 
-	protected function block_comment() {
-		$this->position += 2; // Consume the '/*'.
-		$this->skip_comment_content();
-		$this->type    = self::COMMENT;
-	}
-
-	protected function mysql_comment() {
+	protected function read_mysql_comment(): int {
 		// MySQL-specific comment in one of the following forms:
 		//   1. /*! ... */      - The content is treated as regular SQL code.
 		//   2. /*!12345 ... */ - The content is treated as SQL code when "server version >= 12345".
@@ -2637,17 +2631,17 @@ class WP_MySQL_Lexer {
 
 		if ( $this->server_version < $version ) {
 			// When version not satisfied. Treat the content as a regular comment.
-			$this->skip_comment_content();
-			$this->type = self::COMMENT;
+			$this->read_comment_content();
+			return self::COMMENT;
 		} else {
 			// Version satisfied or not specified. Treat the content as SQL code.
 			$this->position          += $digit_count; // Skip the version number.
 			$this->in_version_comment = true;
-			$this->type               = self::MYSQL_COMMENT_START;
+			return self::MYSQL_COMMENT_START;
 		}
 	}
 
-	protected function skip_comment_content() {
+	protected function read_comment_content() {
 		while ( true ) {
 			$this->position += strcspn( $this->input, '*', $this->position );
 			$this->position += 1; // Consume the '*'.
