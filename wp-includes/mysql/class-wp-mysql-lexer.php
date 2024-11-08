@@ -2326,9 +2326,7 @@ class WP_MySQL_Lexer {
 				$this->type = self::NCHAR_TEXT;
 			}
 		} elseif ( null === $la ) {
-			$this->match_eof();
-			$this->token_instance = new WP_MySQL_Token( self::EOF, '<EOF>' );
-			return false;
+			$this->type = self::EOF;
 		} else {
 			$previous_position = $this->position - 1;
 			$bytes_parsed      = $this->parse_identifier();
@@ -2355,14 +2353,6 @@ class WP_MySQL_Lexer {
 			? null
 			: new WP_MySQL_Token( $this->type, $this->get_text(), $this->channel );
 		return true;
-	}
-
-	protected function match_eof() {
-		if ( null === ( $this->input[ $this->position ] ?? null ) ) {
-			$this->position += 1;
-		} else {
-			throw new RuntimeException( 'Current character is not EOF.' );
-		}
 	}
 
 	/**
