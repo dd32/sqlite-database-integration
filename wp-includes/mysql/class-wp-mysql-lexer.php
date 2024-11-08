@@ -2479,23 +2479,41 @@ class WP_MySQL_Lexer {
 
 	protected function number() {
 		$start_position = $this->position;
+		$current_byte   = $this->input[ $this->position ] ?? null;
+		$next_byte      = $this->input[ $this->position + 1 ] ?? null;
 
-		$current_byte = $this->input[ $this->position ] ?? null;
-		$next_byte    = $this->input[ $this->position + 1 ] ?? null;
-
-		if ( '0' === $current_byte && 'x' === $next_byte ) {
-			$this->hex_number(); // 0x...
-		} elseif ( ( 'x' === $current_byte || 'X' === $current_byte ) && "'" === $next_byte ) {
-			$this->hex_number(); // x'...' or X'...'
-		} elseif ( '0' === $current_byte && 'b' === $next_byte ) {
-			$this->bin_number(); // 0b...
-		} elseif ( ( 'b' === $current_byte || 'B' === $current_byte ) && "'" === $next_byte ) {
-			$this->bin_number(); // b'...' or B'...'
+		if (
+			// HEX number in the form of 0xN.
+			( '0' === $current_byte && 'x' === $next_byte )
+			// HEX number in the form of x'N' or X'N'.
+			|| ( ( 'x' === $current_byte || 'X' === $current_byte ) && "'" === $next_byte )
+		) {
+			$is_quoted       = "'" === $next_byte;
+			$this->position += 2; // Consume "0x" or "x'".
+			$this->position += strspn( $this->input, '0123456789abcdefABCDEF', $this->position );
+			if ( $is_quoted ) {
+				$this->position += 1; // Consume the "'".
+			}
+			$this->type = self::HEX_NUMBER;
+		} elseif (
+			// BIN number in the form of 0bN.
+			( '0' === $current_byte && 'b' === $next_byte )
+			// BIN number in the form of b'N' or B'N'.
+			|| ( ( 'b' === $current_byte || 'B' === $current_byte ) && "'" === $next_byte )
+		) {
+			$is_quoted       = "'" === $next_byte;
+			$this->position += 2; // Consume "0b" or "b'".
+			$this->position += strspn( $this->input, '01', $this->position );
+			if ( $is_quoted ) {
+				$this->position += 1; // Consume the "'".
+			}
+			$this->type = self::BIN_NUMBER;
 		} else {
 			// Here, we have a sequence starting with N or .N, where N is a digit.
 
 			// 1. Try integer first.
-			$this->int_number();
+			$this->position += strspn( $this->input, self::DIGIT_MASK, $this->position );
+			$this->type      = self::INT_NUMBER;
 
 			// 2. In case of N. or .N, it's a decimal or float number.
 			if ( '.' === ( $this->input[ $this->position ] ?? null ) ) {
@@ -2603,45 +2621,6 @@ class WP_MySQL_Lexer {
 		} else {
 			$this->type = self::SINGLE_QUOTED_TEXT;
 		}
-	}
-
-	protected function hex_number() {
-		$is_quoted = 'x' === strtolower( $this->input[ $this->position ] ?? null )
-			&& "'" === ( $this->input[ $this->position + 1 ] ?? null );
-
-		$this->position += 2; // Consume "0x" or "x'".
-		$this->position += strspn( $this->input, '0123456789abcdefABCDEF', $this->position );
-
-		if ( $is_quoted ) {
-			$this->position += 1; // Consume the "'".
-		}
-
-		$this->type = self::HEX_NUMBER;
-	}
-
-	protected function bin_number() {
-		$is_quoted = 'b' === strtolower( $this->input[ $this->position ] ?? null )
-			&& "'" === ( $this->input[ $this->position + 1 ] ?? null );
-
-		$this->position += 2; // Consume "0b" or "b'".
-		$this->position += strspn( $this->input, '01', $this->position );
-
-		if ( $is_quoted ) {
-			$this->position += 1; // Consume the "'".
-		}
-
-		$this->type = self::BIN_NUMBER;
-	}
-
-	protected function int_number() {
-		$this->position += strspn( $this->input, self::DIGIT_MASK, $this->position );
-		$this->type      = self::INT_NUMBER;
-	}
-
-	protected function decimal_number() {
-		$this->position += 1; // Consume the '.'.
-		$this->position += strspn( $this->input, self::DIGIT_MASK, $this->position );
-		$this->type      = self::DECIMAL_NUMBER;
 	}
 
 	protected function line_comment() {
