@@ -2644,12 +2644,11 @@ class WP_MySQL_Lexer {
 
 		// Check if the next 5 characters are digits.
 		$digit_count        = strspn( $this->input, self::DIGIT_MASK, $this->position, 5 );
-		$this->position    += $digit_count;
 		$is_version_comment = 5 === $digit_count;
 
 		// For version comments, extract the version number.
 		$version = $is_version_comment
-			? (int) substr( $this->get_text(), 3 ) // Strip the '/*!' prefix.
+			? (int) substr( $this->input, $this->position, $digit_count )
 			: 0;
 
 		if ( $this->server_version < $version ) {
@@ -2658,6 +2657,7 @@ class WP_MySQL_Lexer {
 			$this->type = self::COMMENT;
 		} else {
 			// Version satisfied or not specified. Treat the content as SQL code.
+			$this->position          += $digit_count; // Skip the version number.
 			$this->in_version_comment = true;
 			$this->type               = self::MYSQL_COMMENT_START;
 		}
