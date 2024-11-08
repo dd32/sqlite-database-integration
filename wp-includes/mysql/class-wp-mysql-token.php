@@ -3,12 +3,10 @@
 class WP_MySQL_Token {
 	public $type;
 	public $text;
-	public $channel;
 
-	public function __construct( $type, $text, $channel = null ) {
-		$this->type    = $type;
-		$this->text    = $text;
-		$this->channel = $channel;
+	public function __construct( $type, $text ) {
+		$this->type = $type;
+		$this->text = $text;
 	}
 
 	public function get_type() {
@@ -21,10 +19,6 @@ class WP_MySQL_Token {
 
 	public function get_text() {
 		return $this->text;
-	}
-
-	public function get_channel() {
-		return $this->channel;
 	}
 
 	public function __toString() {

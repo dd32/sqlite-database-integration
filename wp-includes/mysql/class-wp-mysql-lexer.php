@@ -8,10 +8,6 @@
  *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/mysql/MySQLBaseLexer.cpp
  */
 class WP_MySQL_Lexer {
-	// Token channels
-	const CHANNEL_DEFAULT = 0;
-	const CHANNEL_HIDDEN  = 99;
-
 	// SQL modes
 	const SQL_MODE_NO_MODE              = 0;
 	const SQL_MODE_ANSI_QUOTES          = 1 << 0;
@@ -905,6 +901,7 @@ class WP_MySQL_Lexer {
 	const MYSQL_COMMENT_END   = 902;
 
 	// Special tokens
+	const WHITESPACE    = 0;
 	const EOF           = -1;
 	const EMPTY_TOKEN   = -2;
 	const INVALID_INPUT = -3;
@@ -2055,10 +2052,7 @@ class WP_MySQL_Lexer {
 	protected $input;
 	protected $position                = 0;
 	protected $last_token_end_position = 0;
-	protected $token;
-	protected $channel = self::CHANNEL_DEFAULT;
 	public $type;
-	protected $token_instance;
 	protected $server_version;
 	protected $sql_modes;
 	protected $in_version_comment = false;
@@ -2109,18 +2103,26 @@ class WP_MySQL_Lexer {
 		);
 	}
 
-	public function get_next_token() {
+	public function get_next_token(): WP_MySQL_Token {
 		do {
-			$this->next_token();
-		} while ( null === $this->token_instance || self::CHANNEL_HIDDEN === $this->token_instance->channel );
-		return $this->token_instance;
+			$type = $this->read_next_token();
+			$this->last_token_end_position = $this->position;
+		} while (
+			in_array(
+				$type,
+				array(
+					self::WHITESPACE,
+					self::COMMENT,
+					self::MYSQL_COMMENT_START,
+					self::MYSQL_COMMENT_END
+				),
+				true
+			)
+		);
+		return new WP_MySQL_Token( $type, $this->get_text() );
 	}
 
-	private function next_token() {
-		$this->type           = null;
-		$this->token_instance = null;
-		$this->channel        = self::CHANNEL_DEFAULT;
-
+	private function read_next_token(): int {
 		$la  = $this->input[ $this->position ] ?? null;
 		$la2 = $this->input[ $this->position + 1 ] ?? null;
 
@@ -2215,7 +2217,6 @@ class WP_MySQL_Lexer {
 			if ( '/' === $la2 && $this->in_version_comment ) {
 				$this->position          += 1; // Consume the '/'.
 				$this->type               = self::MYSQL_COMMENT_END;
-				$this->channel            = self::CHANNEL_HIDDEN;
 				$this->in_version_comment = false;
 			} else {
 				$this->type = self::MULT_OPERATOR;
@@ -2314,7 +2315,7 @@ class WP_MySQL_Lexer {
 			$this->line_comment();
 		} elseif ( $this->is_whitespace( $la ) ) {
 			$this->position += strspn( $this->input, self::WHITESPACE_MASK, $this->position );
-			$this->channel   = self::CHANNEL_HIDDEN;
+			$this->type   = self::WHITESPACE;
 		} elseif ( '0' === $la && ( 'x' === $la2 || 'b' === $la2 ) ) {
 			$this->number();
 		} elseif ( ( 'x' === $la || 'X' === $la || 'b' === $la || 'B' === $la ) && "'" === $la2 ) {
@@ -2347,12 +2348,7 @@ class WP_MySQL_Lexer {
 				$this->type      = self::INVALID_INPUT;
 			}
 		}
-
-		$this->last_token_end_position = $this->position;
-		$this->token_instance          = null === $this->type
-			? null
-			: new WP_MySQL_Token( $this->type, $this->get_text(), $this->channel );
-		return true;
+		return $this->type;
 	}
 
 	/**
@@ -2616,14 +2612,12 @@ class WP_MySQL_Lexer {
 	protected function line_comment() {
 		$this->position += strcspn( $this->input, "\r\n", $this->position );
 		$this->type      = self::COMMENT;
-		$this->channel   = self::CHANNEL_HIDDEN;
 	}
 
 	protected function block_comment() {
 		$this->position += 2; // Consume the '/*'.
 		$this->skip_comment_content();
 		$this->type    = self::COMMENT;
-		$this->channel = self::CHANNEL_HIDDEN;
 	}
 
 	protected function mysql_comment() {
@@ -2651,7 +2645,6 @@ class WP_MySQL_Lexer {
 			$this->in_version_comment = true;
 			$this->type               = self::MYSQL_COMMENT_START;
 		}
-		$this->channel = self::CHANNEL_HIDDEN;
 	}
 
 	protected function skip_comment_content() {
