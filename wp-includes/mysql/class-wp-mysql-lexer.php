@@ -2483,7 +2483,7 @@ class WP_MySQL_Lexer {
 	 *   https://dev.mysql.com/doc/refman/8.4/en/identifiers.html
 	 *
 	 * Rules:
-	 *   1. Allowed characters are ASCII a-z, A-Z, 0-9, _, $, and Unicode \x{0080}-\x{ffff}.
+	 *   1. Allowed characters are ASCII a-z, A-Z, 0-9, _, $, and Unicode U+0080-U+FFFF.
 	 *   2. Unquoted identifiers may begin with a digit but may not consist solely of digits.
 	 */
 	private function parse_identifier(): int {
@@ -2497,28 +2497,48 @@ class WP_MySQL_Lexer {
 				$this->bytes_already_read + $byte_length
 			);
 
-			// Check if the following byte can be part of a multibyte character.
-			// If not, bail out early to avoid unnecessary UTF-8 decoding.
-			$byte = $this->sql[ $this->bytes_already_read + $byte_length ] ?? null;
-			if ( null === $byte || ord( $byte ) < 128 ) {
-				break;
-			}
-
-			// Check the \x{0080}-\x{ffff} Unicode character range.
-			$codepoint = utf8_codepoint_at(
-				$this->sql,
-				$this->bytes_already_read + $byte_length,
-				$bytes_parsed
+			// Check if the following byte can be part of a multibyte character
+			// in the range of U+0080 to U+FFFF before looking at further bytes.
+			// If it can't, bail out early to avoid unnecessary UTF-8 decoding.
+			// Identifiers are usually ASCII-only, so we can optimize for that.
+			$byte_1 = ord(
+				$this->sql[ $this->bytes_already_read + $byte_length ] ?? ''
 			);
-
-			if (
-				null === $codepoint
-				|| ! ( 0x80 <= $codepoint && 0xffff >= $codepoint )
-			) {
+			if ( $byte_1 < 0xC2 || $byte_1 > 0xEF ) {
 				break;
 			}
 
-			$byte_length += $bytes_parsed;
+			// Look for a valid 2-byte UTF-8 symbol. Covers range U+0080 - U+07FF.
+			$byte_2 = ord(
+				$this->sql[ $this->bytes_already_read + $byte_length + 1 ] ?? ''
+			);
+			if (
+				$byte_1 <= 0xDF
+				&& $byte_2 >= 0x80 && $byte_2 <= 0xBF
+			) {
+				$byte_length += 2;
+				continue;
+			}
+
+			// Look for a valid 3-byte UTF-8 symbol in range U+0800 - U+FFFF.
+			$byte_3 = ord(
+				$this->sql[ $this->bytes_already_read + $byte_length + 2 ] ?? ''
+			);
+			if (
+				$byte_1 <= 0xEF
+				&& $byte_2 >= 0x80 && $byte_2 <= 0xBF
+				&& $byte_3 >= 0x80 && $byte_3 <= 0xBF
+				// Exclude surrogate range U+D800 to U+DFFF:
+				&& ! ( 0xED === $byte_1 && $byte_2 >= 0xA0 )
+				// Exclude overlong encodings:
+				&& ! ( 0xE0 === $byte_1 && $byte_2 < 0xA0 )
+			) {
+				$byte_length += 3;
+				continue;
+			}
+
+			// Not a valid identifier character.
+			break;
 		}
 
 		// An identifier cannot consist solely of digits.

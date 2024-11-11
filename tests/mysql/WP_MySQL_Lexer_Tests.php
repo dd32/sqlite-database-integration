@@ -4,6 +4,75 @@ use PHPUnit\Framework\TestCase;
 
 class WP_MySQL_Lexer_Tests extends TestCase {
 	/**
+	 * Test that the whole U+0080 to U+FFFF UTF-8 range is valid in an identifier.
+	 * The validity is checked against PCRE with the "u" (PCRE_UTF8) modifier set.
+	 */
+	public function test_identifier_utf8_range(): void {
+		for ( $i = 0x80; $i < 0xffff; $i += 1 ) {
+			$value    = mb_chr( $i, 'UTF-8' );
+			$lexer    = new WP_MySQL_Lexer( $value );
+			$type     = $lexer->next_token()->get_type();
+			$is_valid = preg_match( '/^[\x{0080}-\x{ffff}]$/u', $value );
+			if ( $is_valid ) {
+				$this->assertSame( WP_MySQL_Lexer::IDENTIFIER, $type );
+			} elseif ( strlen( $value ) === 0 ) {
+				$this->assertSame( WP_MySQL_Lexer::EOF, $type );
+			} else {
+				$this->assertSame( WP_MySQL_Lexer::INVALID_INPUT, $type );
+			}
+		}
+	}
+
+	/**
+	 * Test all valid and invalid 2-byte UTF-8 sequences in an identifier.
+	 * The validity is checked against PCRE with the "u" (PCRE_UTF8) modifier set.
+	 *
+	 * Start both bytes from 128 and go up to 255 to include all invalid 2-byte
+	 * UTF-8 sequences as well, and ensure that they won't match as identifiers.
+	 */
+	public function test_identifier_utf8_two_byte_sequences(): void {
+		for ( $byte_1 = 128; $byte_1 <= 255; $byte_1 += 1 ) {
+			for ( $byte_2 = 128; $byte_2 <= 255; $byte_2 += 1 ) {
+				$value    = chr( $byte_1 ) . chr( $byte_2 );
+				$is_valid = preg_match( '/^[\x{0080}-\x{ffff}]$/u', $value );
+				$lexer    = new WP_MySQL_Lexer( $value );
+				$type     = $lexer->next_token()->get_type();
+				if ( $is_valid ) {
+					$this->assertSame( WP_MySQL_Lexer::IDENTIFIER, $type );
+				} else {
+					$this->assertSame( WP_MySQL_Lexer::INVALID_INPUT, $type );
+				}
+			}
+		}
+	}
+
+	/**
+	 * Test all valid and invalid 3-byte UTF-8 sequences in an identifier.
+	 * The validity is checked against PCRE with the "u" (PCRE_UTF8) modifier set.
+	 *
+	 * Start the first byte from 0xE0 to mark the beginning of a 3-byte sequence.
+	 * Start bytes 2 and 3 from 128 and go up to 255 to include all invalid 3-byte
+	 * UTF-8 sequences as well, and ensure that they won't match as identifiers.
+	 */
+	public function test_identifier_utf8_three_byte_sequences(): void {
+		for ( $byte_1 = 0xE0; $byte_1 <= 0xFF; $byte_1 += 1 ) {
+			for ( $byte_2 = 128; $byte_2 <= 255; $byte_2 += 1 ) {
+				for ( $byte_3 = 128; $byte_3 <= 255; $byte_3 += 1 ) {
+					$value    = chr( $byte_1 ) . chr( $byte_2 ) . chr( $byte_3 );
+					$is_valid = preg_match( '/^[\x{0080}-\x{ffff}]$/u', $value );
+					$lexer    = new WP_MySQL_Lexer( $value );
+					$type     = $lexer->next_token()->get_type();
+					if ( $is_valid ) {
+						$this->assertSame( WP_MySQL_Lexer::IDENTIFIER, $type );
+					} else {
+						$this->assertSame( WP_MySQL_Lexer::INVALID_INPUT, $type );
+					}
+				}
+			}
+		}
+	}
+
+	/**
 	 * Numbers vs. identifiers:
 	 *
 	 * In MySQL, when an input matches both a number and an identifier, the number always wins.
