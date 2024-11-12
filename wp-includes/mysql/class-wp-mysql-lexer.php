@@ -1,6 +1,16 @@
 <?php
 
 /**
+ * MySQL lexer.
+ *
+ * An exhaustive lexer for the MySQL SQL dialect with multi-version support.
+ * It scans the provided SQL input payload and generates MySQL token objects.
+ * The lexer is intended to cover 100% of the MySQL SQL syntax for all MySQL
+ * versions starting from 5.7. It's likely to support older versions as well.
+ *
+ * The lexer is implemented with zero dependencies, it doesn't require any PHP
+ * extensions, and it doesn't use PCRE or any other regular expression engines.
+ *
  * This lexer is based on the MySQL Workbench lexer grammar.
  * See:
  *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/grammars/MySQLLexer.g4
@@ -8,20 +18,36 @@
  *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/mysql/MySQLBaseLexer.cpp
  */
 class WP_MySQL_Lexer {
-	// SQL modes
-	const SQL_MODE_NO_MODE              = 0;
-	const SQL_MODE_ANSI_QUOTES          = 1 << 0;
-	const SQL_MODE_HIGH_NOT_PRECEDENCE  = 1 << 1;
-	const SQL_MODE_PIPES_AS_CONCAT      = 1 << 2;
-	const SQL_MODE_IGNORE_SPACE         = 1 << 3;
-	const SQL_MODE_NO_BACKSLASH_ESCAPES = 1 << 4;
+	/**
+	 * The SQL modes that affect the lexer behavior.
+	 *
+	 * These values are intended to be used in a bitmask. See "$this->sql_modes".
+	 * The list of the SQL modes is not exhaustive. Only the ones that influence
+	 * the lexer behavior are included in this list.
+	 *
+	 * See:
+	 *   https://dev.mysql.com/doc/refman/8.4/en/sql-mode.html
+	 */
+	const SQL_MODE_HIGH_NOT_PRECEDENCE  = 1;
+	const SQL_MODE_PIPES_AS_CONCAT      = 2;
+	const SQL_MODE_IGNORE_SPACE         = 4;
+	const SQL_MODE_NO_BACKSLASH_ESCAPES = 8;
 
-	// Character masks for input matching
+	/**
+	 * Character masks for frequently used character classes.
+	 *
+	 * These are intended to be used with "strspn()" and "strcspn()" functions
+	 * for fast character class matching in the SQL payload.
+	 */
 	const WHITESPACE_MASK = " \t\n\r\f";
 	const DIGIT_MASK      = '0123456789';
 
 	/**
-	 * Tokens from the MySQL Workbench "predefined.tokens" list, including token numbers.
+	 * Tokens from the MySQL Workbench "predefined.tokens" list.
+	 *
+	 * This list preserves the token names and IDs from the MySQL Workbench
+	 * "predefined.tokens" list, adding some tokens missing from the list.
+	 *
 	 * See:
 	 *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/grammars/predefined.tokens
 	 */
@@ -772,6 +798,9 @@ class WP_MySQL_Lexer {
 
 	/**
 	 * Additional tokens, mostly mirroring the MySQL Workbench lexer grammar.
+	 *
+	 * These tokens are defined in the MySQL Workbench "MySQLLexer.g4" grammar.
+	 *
 	 * See:
 	 *   https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/grammars/MySQLLexer.g4
 	 */
@@ -852,7 +881,12 @@ class WP_MySQL_Lexer {
 	const SQL_TSI_WEEK_SYMBOL        = 809;
 	const SQL_TSI_YEAR_SYMBOL        = 810;
 
-	// Other - missing in MySQLLexer.g4
+	/**
+	 * Other tokens, missing in the MySQL Workbench "MySQLLexer.g4" grammar.
+	 *
+	 * These tokens are missing in the "MySQLLexer.g4" grammar, because the MySQL
+	 * Workbench lexer and parser don't cover 100% of the MySQL syntax.
+	 */
 	const INTERSECT_SYMBOL                              = 811;
 	const ATTRIBUTE_SYMBOL                              = 812;
 	const SOURCE_AUTO_POSITION_SYMBOL                   = 813;
@@ -907,7 +941,9 @@ class WP_MySQL_Lexer {
 	const INVALID_INPUT = -3;
 
 	/**
-	 * A map of SQL string values to corresponding tokens.
+	 * A map of SQL keyword string values to their corresponding token types.
+	 *
+	 * This is used for a fast lookup of MySQL keywords during tokenization.
 	 */
 	const TOKENS = array(
 		// Tokens from MySQL 5.7:
@@ -1756,10 +1792,12 @@ class WP_MySQL_Lexer {
 
 	/**
 	 * Tokens that are functionally equivalent and can be used interchangeably.
-	 * Some of the synonyms may have a different keyword/function status and
-	 * version constraints and thus need to be converted at the end.
 	 *
-	 * E.g.: NOW is a non-reserved keyword that needs to be used with "()".
+	 * Some of the synonyms may have a different keyword or function status and
+	 * version constraints, hence the synonym conversion needs to be applied
+	 * at the end of the tokenization process, after all other transformations.
+	 *
+	 * E.g.: NOW is a non-reserved keyword that needs to be used with "()" while
 	 *       CURRENT_TIMESTAMP is a reserved keyword that can be used without "()".
 	 */
 	const SYNONYMS = array(
@@ -1810,8 +1848,16 @@ class WP_MySQL_Lexer {
 	/**
 	 * Version constraints for version-specific tokens.
 	 *
-	 * Positive number: >= <version>
-	 * Negative number: <  <version>
+	 * This is a map of tokens to the MySQL server versions in which they were
+	 * introduced (positive number) or removed (negative number). Tokens that
+	 * were both introduced and later removed are not included in this list
+	 * and are handled by manual version checks in the tokenization process.
+	 *
+	 * See:
+	 *   https://dev.mysql.com/doc/mysqld-version-reference/en/keywords.html
+	 *
+	 * Positive number: >= <version> (introduced in <version>)
+	 * Negative number: <  <version> (removed in <version>)
 	 */
 	const VERSIONS = array(
 		// MySQL 5
@@ -2240,34 +2286,34 @@ class WP_MySQL_Lexer {
 	}
 
 	private function read_next_token(): int {
-		$la  = $this->sql[ $this->bytes_already_read ] ?? null;
-		$la2 = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
+		$byte      = $this->sql[ $this->bytes_already_read ] ?? null;
+		$next_byte = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
 
-		if ( "'" === $la || '"' === $la || '`' === $la ) {
-			$type = $this->read_quoted_text( $la );
-		} elseif ( $this->is_digit( $la ) ) {
+		if ( "'" === $byte || '"' === $byte || '`' === $byte ) {
+			$type = $this->read_quoted_text( $byte );
+		} elseif ( $this->is_digit( $byte ) ) {
 			$type = $this->read_number();
-		} elseif ( '.' === $la ) {
-			if ( $this->is_digit( $la2 ) ) {
+		} elseif ( '.' === $byte ) {
+			if ( $this->is_digit( $next_byte ) ) {
 				$type = $this->read_number();
 			} else {
 				$this->bytes_already_read += 1;
 				$type                      = self::DOT_SYMBOL;
 			}
-		} elseif ( '=' === $la ) {
+		} elseif ( '=' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::EQUAL_OPERATOR;
-		} elseif ( ':' === $la ) {
+		} elseif ( ':' === $byte ) {
 			$this->bytes_already_read += 1; // Consume the ':'.
-			if ( '=' === $la2 ) {
+			if ( '=' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the '='.
 				$type                      = self::ASSIGN_OPERATOR;
 			} else {
 				$type = self::COLON_SYMBOL;
 			}
-		} elseif ( '<' === $la ) {
+		} elseif ( '<' === $byte ) {
 			$this->bytes_already_read += 1; // Consume the '<'.
-			if ( '=' === $la2 ) {
+			if ( '=' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the '='.
 				if ( '>' === ( $this->sql[ $this->bytes_already_read ] ?? null ) ) {
 					$this->bytes_already_read += 1; // Consume the '>'.
@@ -2275,41 +2321,41 @@ class WP_MySQL_Lexer {
 				} else {
 					$type = self::LESS_OR_EQUAL_OPERATOR;
 				}
-			} elseif ( '>' === $la2 ) {
+			} elseif ( '>' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the '>'.
 				$type                      = self::NOT_EQUAL_OPERATOR;
-			} elseif ( '<' === $la2 ) {
+			} elseif ( '<' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the '<'.
 				$type                      = self::SHIFT_LEFT_OPERATOR;
 			} else {
 				$type = self::LESS_THAN_OPERATOR;
 			}
-		} elseif ( '>' === $la ) {
+		} elseif ( '>' === $byte ) {
 			$this->bytes_already_read += 1; // Consume the '>'.
-			if ( '=' === $la2 ) {
+			if ( '=' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the '='.
 				$type                      = self::GREATER_OR_EQUAL_OPERATOR;
-			} elseif ( '>' === $la2 ) {
+			} elseif ( '>' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the '>'.
 				$type                      = self::SHIFT_RIGHT_OPERATOR;
 			} else {
 				$type = self::GREATER_THAN_OPERATOR;
 			}
-		} elseif ( '!' === $la ) {
+		} elseif ( '!' === $byte ) {
 			$this->bytes_already_read += 1; // Consume the '!'.
-			if ( '=' === $la2 ) {
+			if ( '=' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the '='.
 				$type                      = self::NOT_EQUAL_OPERATOR;
 			} else {
 				$type = self::LOGICAL_NOT_OPERATOR;
 			}
-		} elseif ( '+' === $la ) {
+		} elseif ( '+' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::PLUS_OPERATOR;
-		} elseif ( '-' === $la ) {
-			if ( '-' === $la2 && $this->is_whitespace( $this->sql[ $this->bytes_already_read + 2 ] ?? null ) ) {
+		} elseif ( '-' === $byte ) {
+			if ( '-' === $next_byte && $this->is_whitespace( $this->sql[ $this->bytes_already_read + 2 ] ?? null ) ) {
 				$type = $this->read_line_comment();
-			} elseif ( '>' === $la2 ) {
+			} elseif ( '>' === $next_byte ) {
 				$this->bytes_already_read += 2; // Consume the '->'.
 				if ( '>' === ( $this->sql[ $this->bytes_already_read ] ?? null ) ) {
 					$this->bytes_already_read += 1; // Consume the '>'.
@@ -2329,17 +2375,17 @@ class WP_MySQL_Lexer {
 				$this->bytes_already_read += 1; // Consume the '-'.
 				$type                      = self::MINUS_OPERATOR;
 			}
-		} elseif ( '*' === $la ) {
+		} elseif ( '*' === $byte ) {
 			$this->bytes_already_read += 1;
-			if ( '/' === $la2 && $this->in_mysql_comment ) {
+			if ( '/' === $next_byte && $this->in_mysql_comment ) {
 				$this->bytes_already_read += 1; // Consume the '/'.
 				$type                      = self::MYSQL_COMMENT_END;
 				$this->in_mysql_comment    = false;
 			} else {
 				$type = self::MULT_OPERATOR;
 			}
-		} elseif ( '/' === $la ) {
-			if ( '*' === $la2 ) {
+		} elseif ( '/' === $byte ) {
+			if ( '*' === $next_byte ) {
 				if ( '!' === ( $this->sql[ $this->bytes_already_read + 2 ] ?? null ) ) {
 					$type = $this->read_mysql_comment();
 				} else {
@@ -2351,23 +2397,23 @@ class WP_MySQL_Lexer {
 				$this->bytes_already_read += 1;
 				$type                      = self::DIV_OPERATOR;
 			}
-		} elseif ( '%' === $la ) {
+		} elseif ( '%' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::MOD_OPERATOR;
-		} elseif ( '&' === $la ) {
+		} elseif ( '&' === $byte ) {
 			$this->bytes_already_read += 1; // Consume the '&'.
-			if ( '&' === $la2 ) {
+			if ( '&' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the '&'.
 				$type                      = self::LOGICAL_AND_OPERATOR;
 			} else {
 				$type = self::BITWISE_AND_OPERATOR;
 			}
-		} elseif ( '^' === $la ) {
+		} elseif ( '^' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::BITWISE_XOR_OPERATOR;
-		} elseif ( '|' === $la ) {
+		} elseif ( '|' === $byte ) {
 			$this->bytes_already_read += 1; // Consume the '|'.
-			if ( '|' === $la2 ) {
+			if ( '|' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the '|'.
 				$type                      = $this->is_sql_mode_active( self::SQL_MODE_PIPES_AS_CONCAT )
 					? self::CONCAT_PIPES_SYMBOL
@@ -2375,31 +2421,31 @@ class WP_MySQL_Lexer {
 			} else {
 				$type = self::BITWISE_OR_OPERATOR;
 			}
-		} elseif ( '~' === $la ) {
+		} elseif ( '~' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::BITWISE_NOT_OPERATOR;
-		} elseif ( ',' === $la ) {
+		} elseif ( ',' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::COMMA_SYMBOL;
-		} elseif ( ';' === $la ) {
+		} elseif ( ';' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::SEMICOLON_SYMBOL;
-		} elseif ( '(' === $la ) {
+		} elseif ( '(' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::OPEN_PAR_SYMBOL;
-		} elseif ( ')' === $la ) {
+		} elseif ( ')' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::CLOSE_PAR_SYMBOL;
-		} elseif ( '{' === $la ) {
+		} elseif ( '{' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::OPEN_CURLY_SYMBOL;
-		} elseif ( '}' === $la ) {
+		} elseif ( '}' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::CLOSE_CURLY_SYMBOL;
-		} elseif ( '@' === $la ) {
+		} elseif ( '@' === $byte ) {
 			$this->bytes_already_read += 1; // Consume the '@'.
 
-			if ( '@' === $la2 ) {
+			if ( '@' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the second '@'.
 				$type                      = self::AT_AT_SIGN_SYMBOL;
 			} else {
@@ -2419,45 +2465,45 @@ class WP_MySQL_Lexer {
 					$type = self::AT_SIGN_SYMBOL;
 				}
 			}
-		} elseif ( '?' === $la ) {
+		} elseif ( '?' === $byte ) {
 			$this->bytes_already_read += 1;
 			$type                      = self::PARAM_MARKER;
-		} elseif ( '\\' === $la ) {
+		} elseif ( '\\' === $byte ) {
 			$this->bytes_already_read += 1; // Consume the '\'.
-			if ( 'N' === $la2 ) {
+			if ( 'N' === $next_byte ) {
 				$this->bytes_already_read += 1; // Consume the 'N'.
 				$type                      = self::NULL2_SYMBOL;
 			} else {
 				$type = self::INVALID_INPUT;
 			}
-		} elseif ( '#' === $la ) {
+		} elseif ( '#' === $byte ) {
 			$type = $this->read_line_comment();
-		} elseif ( $this->is_whitespace( $la ) ) {
+		} elseif ( $this->is_whitespace( $byte ) ) {
 			$this->bytes_already_read += strspn( $this->sql, self::WHITESPACE_MASK, $this->bytes_already_read );
 			$type                      = self::WHITESPACE;
-		} elseif ( '0' === $la && ( 'x' === $la2 || 'b' === $la2 ) ) {
+		} elseif ( '0' === $byte && ( 'x' === $next_byte || 'b' === $next_byte ) ) {
 			$type = $this->read_number();
-		} elseif ( ( 'x' === $la || 'X' === $la || 'b' === $la || 'B' === $la ) && "'" === $la2 ) {
+		} elseif ( ( 'x' === $byte || 'X' === $byte || 'b' === $byte || 'B' === $byte ) && "'" === $next_byte ) {
 			$type = $this->read_number();
-		} elseif ( ( 'n' === $la || 'N' === $la ) && "'" === $la2 ) {
+		} elseif ( ( 'n' === $byte || 'N' === $byte ) && "'" === $next_byte ) {
 			$this->bytes_already_read += 1; // n/N
 			$type                      = $this->read_quoted_text( "'" );
 			if ( self::SINGLE_QUOTED_TEXT === $type ) {
 				$type = self::NCHAR_TEXT;
 			}
-		} elseif ( null === $la ) {
+		} elseif ( null === $byte ) {
 			$type = self::EOF;
 		} else {
-			$previous_position = $this->bytes_already_read - 1;
-			$bytes_parsed      = $this->parse_identifier();
+			$started_at   = $this->bytes_already_read;
+			$bytes_parsed = $this->parse_identifier();
 
 			if ( $bytes_parsed > 0 ) {
 				$this->bytes_already_read += $bytes_parsed;
 
 				// When preceded by a dot, it is always an identifier.
-				if ( $previous_position >= 0 && '.' === $this->sql[ $previous_position ] ) {
+				if ( $started_at > 0 && '.' === $this->sql[ $started_at - 1 ] ) {
 					$type = self::IDENTIFIER;
-				} elseif ( '_' === $la && isset( self::UNDERSCORE_CHARSETS[ strtolower( $this->get_current_token_bytes() ) ] ) ) {
+				} elseif ( '_' === $byte && isset( self::UNDERSCORE_CHARSETS[ strtolower( $this->get_current_token_bytes() ) ] ) ) {
 					$type = self::UNDERSCORE_CHARSET;
 				} else {
 					$type = $this->determine_identifier_or_keyword_type( $this->get_current_token_bytes() );
@@ -2610,15 +2656,15 @@ class WP_MySQL_Lexer {
 	}
 
 	private function read_number(): int {
-		$start_position = $this->bytes_already_read;
-		$current_byte   = $this->sql[ $this->bytes_already_read ] ?? null;
-		$next_byte      = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
+		$started_at = $this->bytes_already_read;
+		$byte       = $this->sql[ $this->bytes_already_read ] ?? null;
+		$next_byte  = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
 
 		if (
 			// HEX number in the form of 0xN.
-			( '0' === $current_byte && 'x' === $next_byte )
+			( '0' === $byte && 'x' === $next_byte )
 			// HEX number in the form of x'N' or X'N'.
-			|| ( ( 'x' === $current_byte || 'X' === $current_byte ) && "'" === $next_byte )
+			|| ( ( 'x' === $byte || 'X' === $byte ) && "'" === $next_byte )
 		) {
 			$is_quoted                 = "'" === $next_byte;
 			$this->bytes_already_read += 2; // Consume "0x" or "x'".
@@ -2629,9 +2675,9 @@ class WP_MySQL_Lexer {
 			$type = self::HEX_NUMBER;
 		} elseif (
 			// BIN number in the form of 0bN.
-			( '0' === $current_byte && 'b' === $next_byte )
+			( '0' === $byte && 'b' === $next_byte )
 			// BIN number in the form of b'N' or B'N'.
-			|| ( ( 'b' === $current_byte || 'B' === $current_byte ) && "'" === $next_byte )
+			|| ( ( 'b' === $byte || 'B' === $byte ) && "'" === $next_byte )
 		) {
 			$is_quoted                 = "'" === $next_byte;
 			$this->bytes_already_read += 2; // Consume "0b" or "b'".
@@ -2655,12 +2701,17 @@ class WP_MySQL_Lexer {
 			}
 
 			// 3. When exponent is present, it's a float number.
-			$current_byte = $this->sql[ $this->bytes_already_read ] ?? null;
+			$byte         = $this->sql[ $this->bytes_already_read ] ?? null;
 			$next_byte    = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
-			$has_exponent = ( 'e' === $current_byte || 'E' === $current_byte ) && (
-				$this->is_digit( $next_byte )
-				|| ( ( '+' === $next_byte || '-' === $next_byte ) && $this->is_digit( $this->sql[ $this->bytes_already_read + 2 ] ?? null ) )
-			);
+			$has_exponent =
+				( 'e' === $byte || 'E' === $byte )
+				&& (
+					$this->is_digit( $next_byte )
+					|| (
+						( '+' === $next_byte || '-' === $next_byte )
+						&& $this->is_digit( $this->sql[ $this->bytes_already_read + 2 ] ?? null )
+					)
+				);
 			if ( $has_exponent ) {
 				$this->bytes_already_read += 1; // Consume the 'e' or 'E'.
 				$this->bytes_already_read += 1; // Consume the '+', '-', or digit.
@@ -2678,14 +2729,14 @@ class WP_MySQL_Lexer {
 			|| ( '0' === $text[0] && ( 'b' === $text[1] || 'x' === $text[1] ) );
 
 		if ( $possible_identifier_prefix ) {
-			$position                 = $this->bytes_already_read;
-			$this->bytes_already_read = $start_position;
+			$at                       = $this->bytes_already_read;
+			$this->bytes_already_read = $started_at;
 			$bytes_parsed             = $this->parse_identifier();
-			$this->bytes_already_read = $position;
+			$this->bytes_already_read = $at;
 
 			// When matched more than the number, it's an identifier.
-			if ( $start_position + $bytes_parsed > $this->bytes_already_read ) {
-				$this->bytes_already_read = $start_position + $bytes_parsed;
+			if ( $started_at + $bytes_parsed > $this->bytes_already_read ) {
+				$this->bytes_already_read = $started_at + $bytes_parsed;
 				$type                     = self::IDENTIFIER;
 			}
 		}
@@ -2712,9 +2763,9 @@ class WP_MySQL_Lexer {
 
 		// We need to look for the closing quote in a loop, as it can be escaped,
 		// in which case the escape sequence is consumed and the loop continues.
-		$pos = $this->bytes_already_read;
+		$at = $this->bytes_already_read;
 		while ( true ) {
-			$pos += strcspn( $this->sql, $quote, $pos );
+			$at += strcspn( $this->sql, $quote, $at );
 
 			// Quotes can be escaped with a "\", except when NO_BACKSLASH_ESCAPES
 			// is set, in which case it is treated as a regular character.
@@ -2722,29 +2773,29 @@ class WP_MySQL_Lexer {
 			// The quote is escaped only when the number of preceding backslashes
 			// is odd, as since a "\\" is simply an escaped backslash character.
 			if ( ! $no_backslash_escapes ) {
-				for ($i = 0; '\\' === $this->sql[ $pos - $i - 1 ]; $i += 1);
+				for ($i = 0; '\\' === $this->sql[ $at - $i - 1 ]; $i += 1);
 				if ( 1 === $i % 2 ) {
-					$pos += 1;
+					$at += 1;
 					continue;
 				}
 			}
 
 			// Unclosed string - unexpected EOF.
-			if ( ( $this->sql[ $pos ] ?? null ) !== $quote ) {
+			if ( ( $this->sql[ $at ] ?? null ) !== $quote ) {
 				return self::INVALID_INPUT;
 			}
 
 			// Check if the quote is doubled.
-			if ( ( $this->sql[ $pos + 1 ] ?? null ) === $quote ) {
-				$pos += 2;
+			if ( ( $this->sql[ $at + 1 ] ?? null ) === $quote ) {
+				$at += 2;
 				continue;
 			}
 
 			break;
 		}
-		$pos += 1;
+		$at += 1;
 
-		$this->bytes_already_read = $pos;
+		$this->bytes_already_read = $at;
 
 		if ( '`' === $quote ) {
 			return self::BACK_TICK_QUOTED_ID;
@@ -2776,7 +2827,7 @@ class WP_MySQL_Lexer {
 			: 0;
 
 		if ( $this->mysql_version < $version ) {
-			// When version not satisfied. Treat the content as a regular comment.
+			// Version not satisfied. Treat the content as a regular comment.
 			$this->read_comment_content();
 			return self::COMMENT;
 		} else {
@@ -2787,7 +2838,7 @@ class WP_MySQL_Lexer {
 		}
 	}
 
-	private function read_comment_content() {
+	private function read_comment_content(): void {
 		while ( true ) {
 			$this->bytes_already_read += strcspn( $this->sql, '*', $this->bytes_already_read );
 			$this->bytes_already_read += 1; // Consume the '*'.
@@ -2802,12 +2853,12 @@ class WP_MySQL_Lexer {
 		}
 	}
 
-	private function is_whitespace( $char ) {
-		return null !== $char && strspn( $char, self::WHITESPACE_MASK ) > 0;
+	private function is_whitespace( ?string $byte ): bool {
+		return null !== $byte && strspn( $byte, self::WHITESPACE_MASK ) > 0;
 	}
 
-	private function is_digit( $char ) {
-		return null !== $char && strspn( $char, self::DIGIT_MASK ) > 0;
+	private function is_digit( ?string $byte ): bool {
+		return null !== $byte && strspn( $byte, self::DIGIT_MASK ) > 0;
 	}
 
 	private function determine_numeric_type( $text ) {
