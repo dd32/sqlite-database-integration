@@ -1,22 +1,17 @@
 <?php
 
-/*
-@TODO:
-* ✅ Tokenize MySQL Queries
-* ✅ Inline fragments
-* ✅ Prune the lookup tree with lookahead table
-
-Possible exploration avenues:
-* Memoize token nb/rule matches to avoid repeating work.
-* Optimize the grammar to resolve ambiugities
-* Generate an expanded PHP parser to optimize matching, right now we're doing a
-	whole lot of lookups
-*/
-
+/**
+ * A recursive descent parser.
+ *
+ * This is a dynamic recursive descent parser that can parse LL grammars.
+ *
+ * @TODO: Add a detailed description and list the properties that a grammar must
+ *        satisfy in order to be supported by this parser (e.g., no left recursion).
+ */
 class WP_Parser {
+	private $grammar;
 	private $tokens;
 	private $position;
-	private $grammar;
 
 	public function __construct( WP_Parser_Grammar $grammar, array $tokens ) {
 		$this->grammar  = $grammar;
@@ -25,17 +20,14 @@ class WP_Parser {
 	}
 
 	public function parse() {
+		// @TODO: Make the starting rule lookup non-grammar-specific.
 		$query_rule_id = $this->grammar->get_rule_id( 'query' );
 		return $this->parse_recursive( $query_rule_id );
 	}
 
-
 	private function parse_recursive( $rule_id ) {
-		//var_dump($this->get_rule_name($rule_id));
 		$is_terminal = $rule_id <= $this->grammar->highest_terminal_id;
 		if ( $is_terminal ) {
-			// Inlining a $this->match($rule_id) call here speeds the
-			// parser up by a whooping 10%!
 			if ( $this->position >= count( $this->tokens ) ) {
 				return null;
 			}
@@ -99,7 +91,10 @@ class WP_Parser {
 			// Negative lookahead for INTO after a valid SELECT statement.
 			// If we match a SELECT statement, but there is an INTO keyword after it,
 			// we're in the wrong branch and need to leave matching to a later rule.
-			// For now, it's hard-coded, but we could extract it to a lookahead table.
+			// @TODO: Extract this to the "WP_MySQL_Parser" class, or add support
+			//        for right-associative rules, which could solve this.
+			//        See: https://github.com/mysql/mysql-workbench/blob/8.0.38/library/parsers/grammars/MySQLParser.g4#L994
+			//        See: https://github.com/antlr/antlr4/issues/488
 			$la = $this->tokens[ $this->position ] ?? null;
 			if ( $la && 'selectStatement' === $rule_name && WP_MySQL_Lexer::INTO_SYMBOL === $la->type ) {
 				$branch_matches = false;
@@ -120,13 +115,5 @@ class WP_Parser {
 		}
 
 		return $node;
-	}
-
-	private function get_rule_name( $id ) {
-		if ( $id <= $this->grammar->highest_terminal_id ) {
-			return WP_MySQL_Lexer::get_token_name( $id );
-		}
-
-		return $this->grammar->get_rule_name( $id );
 	}
 }

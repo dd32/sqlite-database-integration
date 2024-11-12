@@ -1855,6 +1855,8 @@ class WP_MySQL_Lexer {
 	 * See:
 	 *   https://dev.mysql.com/doc/mysqld-version-reference/en/keywords.html
 	 *
+	 * @TODO Verify the version specifiers and ranges against the list above.
+	 *
 	 * Positive number: >= <version> (introduced in <version>)
 	 * Negative number: <  <version> (removed in <version>)
 	 */
@@ -2048,6 +2050,10 @@ class WP_MySQL_Lexer {
 	 * Includes charsets from both MySQL 5 and 8; via "SHOW CHARACTER SET"/docs:
 	 *   https://dev.mysql.com/doc/refman/5.7/en/charset-charsets.html
 	 *   https://dev.mysql.com/doc/refman/8.4/en/charset-charsets.html
+	 *
+	 * @TODO: Make the list respect the MySQL version. The _utf8 underscore charset
+	 *        exists only on MySQL 5, and maybe some others are version-dependant too.
+	 *        We can check this using SHOW CHARACTER SET on different MySQL versions.
 	 */
 	const UNDERSCORE_CHARSETS = array(
 		'_armscii8' => true,
@@ -2591,6 +2597,8 @@ class WP_MySQL_Lexer {
 	}
 
 	private function read_number(): int {
+		// @TODO: Support numeric-only identifier partes after "." (e.g., 1ea10.1).
+
 		$byte      = $this->sql[ $this->bytes_already_read ] ?? null;
 		$next_byte = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
 
@@ -2776,6 +2784,10 @@ class WP_MySQL_Lexer {
 	}
 
 	private function read_mysql_comment(): int {
+		// @TODO: Consider supporting optimizer hints (/*+ ... */) or document
+		//        that they are not supported.
+		// @TODO: Implement six-digit version number support (from MySQL 8.4).
+
 		// MySQL-specific comment in one of the following forms:
 		//   1. /*! ... */      - The content is treated as SQL.
 		//   2. /*!12345 ... */ - The content is treated as SQL when "MySQL version >= 12345".

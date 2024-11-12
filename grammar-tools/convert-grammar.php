@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * This script parses the ANTLR v4 formatted MySQL grammar from "MySQLParser.g4",
+ * flattens it, expands rule quantifiers, and exports it as a compressed PHP array.
+ * The script understands only a subset of the ANTLR v4 format, including rules,
+ * branches, quantifiers, and conditional MySQL server version specifiers.
+ *
+ * @TODO Propagate MySQL version specifiers up to the exported PHP array.
+ * @TODO Migrate the current regex-based solution to a proper grammar parser.
+ */
+
 require_once __DIR__ . '/../wp-includes/parser/class-wp-parser-grammar.php';
 require_once __DIR__ . '/../wp-includes/mysql/class-wp-mysql-lexer.php';
 

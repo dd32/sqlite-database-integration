@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * A parser grammar.
+ *
+ * This class represents a parser grammar that can be consumed by WP_Parser.
+ * It loads a compressed grammar from a PHP array, inflates it to an internal
+ * representation, and precomputes a lookup table for quick branch selection.
+ *
+ * @TODO: Add more details about the grammar implementation.
+ */
 class WP_Parser_Grammar {
 	/**
 	 * ID for a special grammar rule that represents an empty "ε" (epsilon) rule.
@@ -14,6 +23,9 @@ class WP_Parser_Grammar {
 	 */
 	const EMPTY_RULE_ID = 0;
 
+	/**
+	 * @TODO: Review and document these properties and their visibility.
+	 */
 	public $rules;
 	public $rule_names;
 	public $fragment_ids;
@@ -34,13 +46,10 @@ class WP_Parser_Grammar {
 	}
 
 	/**
-	 * Grammar is a packed PHP array to minimize the file size. Every
-	 * rule and token is encoded as an integer. It still takes 1.2MB,
-	 * maybe we can do better than that with a more efficient encoding,
-	 * e.g. what Dennis Snell did for the HTML entity decoder.
-	 * Or maybe we can reduce the grammar size by factoring the rules?
-	 * Or perhaps we can let go of some parsing rules that SQLite cannot
-	 * support anyway?
+	 * Inflate the grammar to an internal representation optimized for parsing.
+	 *
+	 * The input grammar is a compressed PHP array to minimize the file size.
+	 * Every rule and token in the compressed grammar is encoded as an integer.
 	 */
 	private function inflate( $grammar ) {
 		$this->lowest_non_terminal_id = $grammar['rules_offset'];
@@ -49,23 +58,21 @@ class WP_Parser_Grammar {
 		foreach ( $grammar['rules_names'] as $rule_index => $rule_name ) {
 			$this->rule_names[ $rule_index + $grammar['rules_offset'] ] = $rule_name;
 			$this->rules[ $rule_index + $grammar['rules_offset'] ]      = array();
+
 			/**
 			 * Treat all intermediate rules as fragments to inline before returning
 			 * the final parse tree to the API consumer.
 			 *
-			 * The original grammar was too difficult to parse with rules like
+			 * The original grammar was too difficult to parse with rules like:
 			 *
 			 *    query ::= EOF | ((simpleStatement | beginWork) ((SEMICOLON_SYMBOL EOF?) | EOF))
 			 *
-			 * We've  factored rules like bitExpr* to separate rules like bitExpr_zero_or_more.
+			 * We've factored rules like bitExpr* to separate rules like bitExpr_zero_or_more.
 			 * This is super useful for parsing, but it limits the API consumer's ability to
 			 * reason about the parse tree.
 			 *
-			 * The following rules as fragments:
-			 *
-			 * * Rules starting with a percent sign ("%") – these are intermediate
-			 *   rules that are not part of the original grammar. They are useful
-			 *
+			 * Fragments are intermediate rules that are not part of the original grammar.
+			 * They are prefixed with a "%" to be distinguished from the original rules.
 			 */
 			if ( '%' === $rule_name[0] ) {
 				$this->fragment_ids[ $rule_index + $grammar['rules_offset'] ] = true;
@@ -86,11 +93,11 @@ class WP_Parser_Grammar {
 		 * This is similar to left-factoring the grammar, even if not quite
 		 * the same.
 		 *
-		 * This enables us to quickly bale out from checking branches that
+		 * This enables us to quickly bail out from checking branches that
 		 * cannot possibly match the current token. This increased the parser
-		 * speed by a whooping 80%!
+		 * speed by a whopping 80%!
 		 *
-		 * The next step could be to:
+		 * @TODO: Explore these possible next steps:
 		 *
 		 * * Compute a rule => [token => branch[]] list lookup table and only
 		 *   process the branches that have a chance of matching the current token.

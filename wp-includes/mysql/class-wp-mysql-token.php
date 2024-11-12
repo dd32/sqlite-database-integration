@@ -1,6 +1,14 @@
 <?php
 
+/**
+ * @TODO: Consider making this a generic WP_Parser_Token or similar.
+ *        We can also make WP_MySQL_Token extend the generic one.
+ * @TODO: Document the class.
+ */
 class WP_MySQL_Token {
+	/**
+	 * @TODO: Review and document these properties and their visibility.
+	 */
 	public $type;
 	public $text;
 
@@ -13,27 +21,15 @@ class WP_MySQL_Token {
 		return $this->type;
 	}
 
-	public function get_name() {
-		return WP_MySQL_Lexer::get_token_name( $this->type );
-	}
-
 	public function get_text() {
 		return $this->text;
 	}
 
-	public function __toString() {
-		return $this->text . '<' . $this->type . ',' . $this->get_name() . '>';
+	public function get_name() {
+		return WP_MySQL_Lexer::get_token_name( $this->type );
 	}
 
-	public function extract_value() {
-		if ( WP_MySQL_Lexer::BACK_TICK_QUOTED_ID === $this->type ) {
-			return substr( $this->text, 1, -1 );
-		} elseif ( WP_MySQL_Lexer::DOUBLE_QUOTED_TEXT === $this->type ) {
-			return substr( $this->text, 1, -1 );
-		} elseif ( WP_MySQL_Lexer::SINGLE_QUOTED_TEXT === $this->type ) {
-			return substr( $this->text, 1, -1 );
-		} else {
-			return $this->text;
-		}
+	public function __toString() {
+		return $this->text . '<' . $this->type . ',' . $this->get_name() . '>';
 	}
 }
