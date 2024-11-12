@@ -72,8 +72,12 @@ class WP_Parser {
 					$branch_matches = false;
 					break;
 				} elseif ( true === $subnode ) {
-					// ε – the rule matched without actually matching a token.
-					//     Proceed without adding anything to $match.
+					/*
+					 * The subrule was matched without actually matching a token.
+					 * This means a special empty "ε" (epsilon) rule was matched.
+					 * An "ε" rule in a grammar matches an empty input of 0 bytes.
+					 * It is used to represent optional grammar productions.
+					 */
 					continue;
 				} elseif ( is_array( $subnode ) && 0 === count( $subnode ) ) {
 					continue;
