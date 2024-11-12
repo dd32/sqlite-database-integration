@@ -2675,6 +2675,40 @@ class WP_MySQL_Lexer {
 		if ( $possible_identifier_prefix && self::IDENTIFIER === $this->read_identifier() ) {
 			$type = self::IDENTIFIER;
 		}
+
+		// Determine integer type.
+		if ( self::INT_NUMBER === $type ) {
+			// Fast path for most integers.
+			$bytes = $this->get_current_token_bytes();
+			if ( strlen( $bytes ) < 10 ) {
+				return self::INT_NUMBER;
+			}
+
+			// Remove leading zeros.
+			$bytes  = substr( $bytes, strspn( $bytes, '0' ) );
+			$length = strlen( $bytes );
+
+			// Determine integer type based on its length and value.
+			if ( $length < 10 ) {
+				return self::INT_NUMBER;
+			} elseif ( 10 === $length ) {
+				return strcmp( $bytes, '2147483647' ) > 0
+					? self::LONG_NUMBER
+					: self::INT_NUMBER;
+			} elseif ( $length < 19 ) {
+				return self::LONG_NUMBER;
+			} elseif ( 19 === $length ) {
+				return strcmp( $bytes, '9223372036854775807' ) > 0
+					? self::ULONGLONG_NUMBER
+					: self::LONG_NUMBER;
+			} elseif ( 20 === $length ) {
+				return strcmp( $bytes, '18446744073709551615' ) > 0
+					? self::DECIMAL_NUMBER
+					: self::ULONGLONG_NUMBER;
+			} else {
+				return self::DECIMAL_NUMBER;
+			}
+		}
 		return $type;
 	}
 
@@ -2853,19 +2887,5 @@ class WP_MySQL_Lexer {
 
 		// Apply synonyms.
 		return self::SYNONYMS[ $type ] ?? $type;
-	}
-
-	private function determine_numeric_type( $text ) {
-		if ( preg_match( '/^0[xX][0-9a-fA-F]+$/', $text ) ) {
-			return self::HEX_NUMBER;
-		} elseif ( preg_match( '/^0[bB][01]+$/', $text ) ) {
-			return self::BIN_NUMBER;
-		} elseif ( preg_match( '/^\d+$/', $text ) ) {
-			if ( PHP_INT_MAX >= (int) $text ) {
-				return self::INT_NUMBER;
-			}
-			return self::LONG_NUMBER;
-		}
-		return self::INVALID_INPUT;
 	}
 }

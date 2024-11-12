@@ -73,6 +73,43 @@ class WP_MySQL_Lexer_Tests extends TestCase {
 	}
 
 	/**
+	 * @dataProvider data_integer_types
+	 */
+	public function test_integer_types( $input, $expected ): void {
+		$lexer = new WP_MySQL_Lexer( $input );
+		$type  = $lexer->next_token()->get_type();
+		$this->assertSame( $expected, $type );
+	}
+
+	public function data_integer_types(): array {
+		return array(
+			array( '0', WP_MySQL_Lexer::INT_NUMBER ),
+			array( '123', WP_MySQL_Lexer::INT_NUMBER ),
+			array( '2147483647', WP_MySQL_Lexer::INT_NUMBER ),
+			array( '00000000001', WP_MySQL_Lexer::INT_NUMBER ),
+			array( '00000000002147483647', WP_MySQL_Lexer::INT_NUMBER ),
+
+			array( '2147483648', WP_MySQL_Lexer::LONG_NUMBER ),
+			array( '123456789123456789', WP_MySQL_Lexer::LONG_NUMBER ),
+			array( '9223372036854775807', WP_MySQL_Lexer::LONG_NUMBER ),
+			array( '00000000002147483648', WP_MySQL_Lexer::LONG_NUMBER ),
+			array( '00000000009223372036854775807', WP_MySQL_Lexer::LONG_NUMBER ),
+
+			array( '9223372036854775808', WP_MySQL_Lexer::ULONGLONG_NUMBER ),
+			array( '12345678912345678912', WP_MySQL_Lexer::ULONGLONG_NUMBER ),
+			array( '18446744073709551615', WP_MySQL_Lexer::ULONGLONG_NUMBER ),
+			array( '00000000000000000009223372036854775808', WP_MySQL_Lexer::ULONGLONG_NUMBER ),
+			array( '000000000000000000018446744073709551615', WP_MySQL_Lexer::ULONGLONG_NUMBER ),
+
+			array( '18446744073709551616', WP_MySQL_Lexer::DECIMAL_NUMBER ),
+			array( '23456789123456789123', WP_MySQL_Lexer::DECIMAL_NUMBER ),
+			array( '123456789123456789123456789', WP_MySQL_Lexer::DECIMAL_NUMBER ),
+			array( '0000000000000000000018446744073709551616', WP_MySQL_Lexer::DECIMAL_NUMBER ),
+			array( '00000000000000000000123456789123456789123456789', WP_MySQL_Lexer::DECIMAL_NUMBER ),
+		);
+	}
+
+	/**
 	 * Numbers vs. identifiers:
 	 *
 	 * In MySQL, when an input matches both a number and an identifier, the number always wins.
