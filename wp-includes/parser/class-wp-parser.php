@@ -22,14 +22,15 @@ class WP_Parser {
 	public function parse() {
 		// @TODO: Make the starting rule lookup non-grammar-specific.
 		$query_rule_id = $this->grammar->get_rule_id( 'query' );
-		return $this->parse_recursive( $query_rule_id );
+		$ast           = $this->parse_recursive( $query_rule_id );
+		return false === $ast ? null : $ast;
 	}
 
 	private function parse_recursive( $rule_id ) {
 		$is_terminal = $rule_id <= $this->grammar->highest_terminal_id;
 		if ( $is_terminal ) {
 			if ( $this->position >= count( $this->tokens ) ) {
-				return null;
+				return false;
 			}
 
 			if ( WP_Parser_Grammar::EMPTY_RULE_ID === $rule_id ) {
@@ -40,12 +41,12 @@ class WP_Parser {
 				++$this->position;
 				return $this->tokens[ $this->position - 1 ];
 			}
-			return null;
+			return false;
 		}
 
 		$branches = $this->grammar->rules[ $rule_id ];
 		if ( ! count( $branches ) ) {
-			return null;
+			return false;
 		}
 
 		// Bale out from processing the current branch if none of its rules can
@@ -56,7 +57,7 @@ class WP_Parser {
 				! isset( $this->grammar->lookahead_is_match_possible[ $rule_id ][ $token_id ] ) &&
 				! isset( $this->grammar->lookahead_is_match_possible[ $rule_id ][ WP_Parser_Grammar::EMPTY_RULE_ID ] )
 			) {
-				return null;
+				return false;
 			}
 		}
 
@@ -68,7 +69,7 @@ class WP_Parser {
 			$branch_matches = true;
 			foreach ( $branch as $subrule_id ) {
 				$subnode = $this->parse_recursive( $subrule_id );
-				if ( null === $subnode ) {
+				if ( false === $subnode ) {
 					$branch_matches = false;
 					break;
 				} elseif ( true === $subnode ) {
@@ -111,7 +112,7 @@ class WP_Parser {
 
 		if ( ! $branch_matches ) {
 			$this->position = $starting_position;
-			return null;
+			return false;
 		}
 
 		if ( 0 === count( $node->children ) ) {
