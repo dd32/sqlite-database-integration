@@ -2595,65 +2595,6 @@ class WP_MySQL_Lexer {
 			: self::INVALID_INPUT;
 	}
 
-	private function determine_identifier_or_keyword_type( string $value ): int {
-		$value = strtoupper( $value );
-
-		// Lookup the string in the token table.
-		$type = self::TOKENS[ $value ] ?? self::IDENTIFIER;
-		if ( self::IDENTIFIER === $type ) {
-			return self::IDENTIFIER;
-		}
-
-		// Apply MySQL version specifics (positive number: >= <version>, negative number: < <version>).
-		if ( isset( self::VERSIONS[ $type ] ) ) {
-			$version = self::VERSIONS[ $type ];
-			if ( $this->mysql_version < $version || -$version >= $this->mysql_version ) {
-				return self::IDENTIFIER;
-			}
-		}
-
-		// Apply MySQL version ranges manually.
-		if (
-			self::MAX_STATEMENT_TIME_SYMBOL === $type
-			&& ! ( $this->mysql_version >= 50704 && $this->mysql_version < 50708 )
-		) {
-			return self::IDENTIFIER;
-		}
-
-		if (
-			self::NONBLOCKING_SYMBOL === $type
-			&& ! ( $this->mysql_version >= 50700 && $this->mysql_version < 50706 )
-		) {
-			return self::IDENTIFIER;
-		}
-
-		if (
-			self::REMOTE_SYMBOL === $type
-			&& ( $this->mysql_version >= 80003 && $this->mysql_version < 80014 )
-		) {
-			return self::IDENTIFIER;
-		}
-
-		// Determine function calls.
-		if ( isset( self::FUNCTIONS[ $type ] ) ) {
-			// Skip any whitespace character if the SQL mode says they should be ignored.
-			if ( $this->is_sql_mode_active( self::SQL_MODE_IGNORE_SPACE ) ) {
-				$this->bytes_already_read += strspn( $this->sql, self::WHITESPACE_MASK, $this->bytes_already_read );
-			}
-			if ( '(' !== ( $this->sql[ $this->bytes_already_read ] ?? null ) ) {
-				return self::IDENTIFIER;
-			}
-		}
-
-		// With "SQL_MODE_HIGH_NOT_PRECEDENCE" enabled, "NOT" needs to be emitted as a higher priority NOT2 symbol.
-		if ( self::NOT_SYMBOL === $type && $this->is_sql_mode_active( self::SQL_MODE_HIGH_NOT_PRECEDENCE ) ) {
-			$type = self::NOT2_SYMBOL;
-		}
-
-		// Apply synonyms.
-		return self::SYNONYMS[ $type ] ?? $type;
-	}
-
 	private function read_number(): int {
 		$byte      = $this->sql[ $this->bytes_already_read ] ?? null;
 		$next_byte = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
@@ -2853,6 +2794,65 @@ class WP_MySQL_Lexer {
 
 	private function is_digit( ?string $byte ): bool {
 		return null !== $byte && strspn( $byte, self::DIGIT_MASK ) > 0;
+	}
+
+	private function determine_identifier_or_keyword_type( string $value ): int {
+		$value = strtoupper( $value );
+
+		// Lookup the string in the token table.
+		$type = self::TOKENS[ $value ] ?? self::IDENTIFIER;
+		if ( self::IDENTIFIER === $type ) {
+			return self::IDENTIFIER;
+		}
+
+		// Apply MySQL version specifics (positive number: >= <version>, negative number: < <version>).
+		if ( isset( self::VERSIONS[ $type ] ) ) {
+			$version = self::VERSIONS[ $type ];
+			if ( $this->mysql_version < $version || -$version >= $this->mysql_version ) {
+				return self::IDENTIFIER;
+			}
+		}
+
+		// Apply MySQL version ranges manually.
+		if (
+			self::MAX_STATEMENT_TIME_SYMBOL === $type
+			&& ! ( $this->mysql_version >= 50704 && $this->mysql_version < 50708 )
+		) {
+			return self::IDENTIFIER;
+		}
+
+		if (
+			self::NONBLOCKING_SYMBOL === $type
+			&& ! ( $this->mysql_version >= 50700 && $this->mysql_version < 50706 )
+		) {
+			return self::IDENTIFIER;
+		}
+
+		if (
+			self::REMOTE_SYMBOL === $type
+			&& ( $this->mysql_version >= 80003 && $this->mysql_version < 80014 )
+		) {
+			return self::IDENTIFIER;
+		}
+
+		// Determine function calls.
+		if ( isset( self::FUNCTIONS[ $type ] ) ) {
+			// Skip any whitespace character if the SQL mode says they should be ignored.
+			if ( $this->is_sql_mode_active( self::SQL_MODE_IGNORE_SPACE ) ) {
+				$this->bytes_already_read += strspn( $this->sql, self::WHITESPACE_MASK, $this->bytes_already_read );
+			}
+			if ( '(' !== ( $this->sql[ $this->bytes_already_read ] ?? null ) ) {
+				return self::IDENTIFIER;
+			}
+		}
+
+		// With "SQL_MODE_HIGH_NOT_PRECEDENCE" enabled, "NOT" needs to be emitted as a higher priority NOT2 symbol.
+		if ( self::NOT_SYMBOL === $type && $this->is_sql_mode_active( self::SQL_MODE_HIGH_NOT_PRECEDENCE ) ) {
+			$type = self::NOT2_SYMBOL;
+		}
+
+		// Apply synonyms.
+		return self::SYNONYMS[ $type ] ?? $type;
 	}
 
 	private function determine_numeric_type( $text ) {
