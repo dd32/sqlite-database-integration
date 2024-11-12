@@ -43,8 +43,8 @@ class WP_Parser {
 			return null;
 		}
 
-		$rule = $this->grammar->rules[ $rule_id ];
-		if ( ! count( $rule ) ) {
+		$branches = $this->grammar->rules[ $rule_id ];
+		if ( ! count( $branches ) ) {
 			return null;
 		}
 
@@ -62,7 +62,7 @@ class WP_Parser {
 
 		$rule_name         = $this->grammar->rule_names[ $rule_id ];
 		$starting_position = $this->position;
-		foreach ( $rule as $branch ) {
+		foreach ( $branches as $branch ) {
 			$this->position = $starting_position;
 			$node           = new WP_Parser_Node( $rule_id, $rule_name );
 			$branch_matches = true;
