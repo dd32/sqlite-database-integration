@@ -40,7 +40,7 @@ class WP_Parser {
 				return null;
 			}
 
-			if ( WP_MySQL_Lexer::EMPTY_TOKEN === $rule_id ) {
+			if ( WP_Parser_Grammar::EMPTY_RULE_ID === $rule_id ) {
 				return true;
 			}
 
@@ -62,7 +62,7 @@ class WP_Parser {
 			$token_id = $this->tokens[ $this->position ]->type;
 			if (
 				! isset( $this->grammar->lookahead_is_match_possible[ $rule_id ][ $token_id ] ) &&
-				! isset( $this->grammar->lookahead_is_match_possible[ $rule_id ][ WP_MySQL_Lexer::EMPTY_TOKEN ] )
+				! isset( $this->grammar->lookahead_is_match_possible[ $rule_id ][ WP_Parser_Grammar::EMPTY_RULE_ID ] )
 			) {
 				return null;
 			}

@@ -937,8 +937,7 @@ class WP_MySQL_Lexer {
 	// Special tokens
 	const WHITESPACE    = 0;
 	const EOF           = -1;
-	const EMPTY_TOKEN   = -2;
-	const INVALID_INPUT = -3;
+	const INVALID_INPUT = -2;
 
 	/**
 	 * A map of SQL keyword string values to their corresponding token types.
@@ -2253,10 +2252,6 @@ class WP_MySQL_Lexer {
 	 * @return int|null The token ID for the given token name; null when not found.
 	 */
 	public static function get_token_id( string $token_name ): ?int {
-		if ( 'ε' === $token_name ) {
-			return self::EMPTY_TOKEN;
-		}
-
 		$constant_name = self::class . '::' . $token_name;
 		if ( ! defined( $constant_name ) ) {
 			return null;

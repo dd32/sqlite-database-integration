@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../wp-includes/parser/class-wp-parser-grammar.php';
 require_once __DIR__ . '/../wp-includes/mysql/class-wp-mysql-lexer.php';
 
 const GRAMMAR_FILE = __DIR__ . '/../wp-includes/mysql/mysql-grammar.php';
@@ -240,7 +241,10 @@ foreach ( $grammar as $rule ) {
 		foreach ( $branch as $i => $name ) {
 			$is_terminal = ! isset( $rule_id_by_name[ $name ] );
 			if ( $is_terminal ) {
-				$new_branch[] = WP_MySQL_Lexer::get_token_id( $name );
+				$token_id     = 'ε' === $name
+					? WP_Parser_Grammar::EMPTY_RULE_ID
+					: WP_MySQL_Lexer::get_token_id( $name );
+				$new_branch[] = $token_id;
 			} else {
 				// Use rule id to avoid conflicts with token ids
 				$new_branch[] = $rule_id_by_name[ $name ];

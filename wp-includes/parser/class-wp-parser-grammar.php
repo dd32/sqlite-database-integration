@@ -1,6 +1,19 @@
 <?php
 
 class WP_Parser_Grammar {
+	/**
+	 * ID for a special grammar rule that represents an empty "ε" (epsilon) rule.
+	 *
+	 * An "ε" rule in a grammar is a rule that matches an empty input of 0 bytes.
+	 * It can be used to represent optional grammar productions, and it is helpful
+	 * for expanding 0-or-1, 0-or-more, and 1-or-more quantifiers into simple rules.
+	 *
+	 * @TODO Investigate whether we can prevent possible conflict with a token ID.
+	 *       The MySQL grammar doesn't define a token with ID "0", but generally
+	 *       token IDs are not guaranteed to always satisfy this condition.
+	 */
+	const EMPTY_RULE_ID = 0;
+
 	public $rules;
 	public $rule_names;
 	public $fragment_ids;
