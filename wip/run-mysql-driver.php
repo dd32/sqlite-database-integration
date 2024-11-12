@@ -150,7 +150,7 @@ class MySQLonSQLiteDriver {
 			}
 		}
 
-		if ( ! ( $parse_tree instanceof WP_Parser_Tree ) ) {
+		if ( ! ( $parse_tree instanceof WP_Parser_Node ) ) {
 			throw new Exception( 'translateQuery only accepts MySQLToken and ParseTree instances' );
 		}
 

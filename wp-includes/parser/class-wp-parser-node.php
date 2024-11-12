@@ -1,6 +1,18 @@
 <?php
 
-class WP_Parser_Tree {
+/**
+ * A node in parse tree.
+ *
+ * This class represents a node in the parse tree that is produced by WP_Parser.
+ * A node corresponds to the related grammar rule that was matched by the parser.
+ * Each node can contain children, consisting of other nodes and grammar tokens.
+ * In this way, a parser node constitutes a recursive structure that represents
+ * a parse (sub)tree at each level of the full grammar tree.
+ */
+class WP_Parser_Node {
+	/**
+	 * @TODO: Review and document these properties and their visibility.
+	 */
 	public $rule_id;
 	public $rule_name;
 	public $children = array();
@@ -20,7 +32,7 @@ class WP_Parser_Tree {
 	 *
 	 * What are rule fragments?
 	 *
-	 * When we initially parse the BNF grammar file, it has compound rules such
+	 * When we initially parse the grammar file, it has compound rules such
 	 * as this one:
 	 *
 	 *      query ::= EOF | ((simpleStatement | beginWork) ((SEMICOLON_SYMBOL EOF?) | EOF))
@@ -35,7 +47,7 @@ class WP_Parser_Tree {
 	 *      %%query02 ::= SEMICOLON_SYMBOL EOF_zero_or_one | EOF
 	 *      EOF_zero_or_one ::= EOF | ε
 	 *
-	 * This factorization happens in 1-ebnf-to-json.js.
+	 * This factorization happens in "convert-grammar.php".
 	 *
 	 * "Fragments" are intermediate artifacts whose names are not in the original grammar.
 	 * They are extremely useful for the parser, but the API consumer should never have to
@@ -92,7 +104,7 @@ class WP_Parser_Tree {
 
 	public function has_child( $rule_name ) {
 		foreach ( $this->children as $child ) {
-			if ( ( $child instanceof WP_Parser_Tree && $child->rule_name === $rule_name ) ) {
+			if ( ( $child instanceof WP_Parser_Node && $child->rule_name === $rule_name ) ) {
 				return true;
 			}
 		}
@@ -125,7 +137,7 @@ class WP_Parser_Tree {
 
 	public function get_child( $rule_name = null ) {
 		foreach ( $this->children as $child ) {
-			if ( $child instanceof WP_Parser_Tree && (
+			if ( $child instanceof WP_Parser_Node && (
 				$child->rule_name === $rule_name ||
 				null === $rule_name
 			) ) {
@@ -160,7 +172,7 @@ class WP_Parser_Tree {
 	public function get_children( $rule_name = null ) {
 		$matches = array();
 		foreach ( $this->children as $child ) {
-			if ( $child instanceof WP_Parser_Tree && (
+			if ( $child instanceof WP_Parser_Node && (
 				null === $rule_name ||
 				$child->rule_name === $rule_name
 			) ) {

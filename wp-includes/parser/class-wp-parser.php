@@ -64,7 +64,7 @@ class WP_Parser {
 		$starting_position = $this->position;
 		foreach ( $rule as $branch ) {
 			$this->position = $starting_position;
-			$node           = new WP_Parser_Tree( $rule_id, $rule_name );
+			$node           = new WP_Parser_Node( $rule_id, $rule_name );
 			$branch_matches = true;
 			foreach ( $branch as $subrule_id ) {
 				$subnode = $this->parse_recursive( $subrule_id );
