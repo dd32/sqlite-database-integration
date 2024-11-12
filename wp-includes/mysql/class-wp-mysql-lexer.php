@@ -2494,12 +2494,9 @@ class WP_MySQL_Lexer {
 		} elseif ( null === $byte ) {
 			$type = self::EOF;
 		} else {
-			$started_at   = $this->bytes_already_read;
-			$bytes_parsed = $this->parse_identifier();
-
-			if ( $bytes_parsed > 0 ) {
-				$this->bytes_already_read += $bytes_parsed;
-
+			$started_at = $this->bytes_already_read;
+			$type       = $this->read_identifier();
+			if ( self::IDENTIFIER === $type ) {
 				// When preceded by a dot, it is always an identifier.
 				if ( $started_at > 0 && '.' === $this->sql[ $started_at - 1 ] ) {
 					$type = self::IDENTIFIER;
@@ -2508,9 +2505,6 @@ class WP_MySQL_Lexer {
 				} else {
 					$type = $this->determine_identifier_or_keyword_type( $this->get_current_token_bytes() );
 				}
-			} else {
-				$this->bytes_already_read += 1;
-				$type                      = self::INVALID_INPUT;
 			}
 		}
 		return $type;
@@ -2525,22 +2519,28 @@ class WP_MySQL_Lexer {
 	}
 
 	/**
-	 * Unquoted identifiers:
-	 *   https://dev.mysql.com/doc/refman/8.4/en/identifiers.html
+	 * Read an unquoted identifier.
+	 *
+	 * This function reads characters that are allowed in an unquoted identifier.
+	 * An identifier cannot consist solely of digits, but this function doesn't
+	 * ensure that explicitly, as numbers are processed before identifiers in
+	 * the tokenization process, recognizing all digit-only sequences as numbers.
 	 *
 	 * Rules:
 	 *   1. Allowed characters are ASCII a-z, A-Z, 0-9, _, $, and Unicode U+0080-U+FFFF.
 	 *   2. Unquoted identifiers may begin with a digit but may not consist solely of digits.
+	 *
+	 *  See:
+	 *    https://dev.mysql.com/doc/refman/8.4/en/identifiers.html
 	 */
-	private function parse_identifier(): int {
-		$byte_length = 0;
-
+	private function read_identifier(): int {
+		$started_at = $this->bytes_already_read;
 		while ( true ) {
 			// First, let's try to parse an ASCII sequence.
-			$byte_length += strspn(
+			$this->bytes_already_read += strspn(
 				$this->sql,
 				'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$',
-				$this->bytes_already_read + $byte_length
+				$this->bytes_already_read
 			);
 
 			// Check if the following byte can be part of a multibyte character
@@ -2548,7 +2548,7 @@ class WP_MySQL_Lexer {
 			// If it can't, bail out early to avoid unnecessary UTF-8 decoding.
 			// Identifiers are usually ASCII-only, so we can optimize for that.
 			$byte_1 = ord(
-				$this->sql[ $this->bytes_already_read + $byte_length ] ?? ''
+				$this->sql[ $this->bytes_already_read ] ?? ''
 			);
 			if ( $byte_1 < 0xC2 || $byte_1 > 0xEF ) {
 				break;
@@ -2556,19 +2556,19 @@ class WP_MySQL_Lexer {
 
 			// Look for a valid 2-byte UTF-8 symbol. Covers range U+0080 - U+07FF.
 			$byte_2 = ord(
-				$this->sql[ $this->bytes_already_read + $byte_length + 1 ] ?? ''
+				$this->sql[ $this->bytes_already_read + 1 ] ?? ''
 			);
 			if (
 				$byte_1 <= 0xDF
 				&& $byte_2 >= 0x80 && $byte_2 <= 0xBF
 			) {
-				$byte_length += 2;
+				$this->bytes_already_read += 2;
 				continue;
 			}
 
 			// Look for a valid 3-byte UTF-8 symbol in range U+0800 - U+FFFF.
 			$byte_3 = ord(
-				$this->sql[ $this->bytes_already_read + $byte_length + 2 ] ?? ''
+				$this->sql[ $this->bytes_already_read + 2 ] ?? ''
 			);
 			if (
 				$byte_1 <= 0xEF
@@ -2579,7 +2579,7 @@ class WP_MySQL_Lexer {
 				// Exclude overlong encodings:
 				&& ! ( 0xE0 === $byte_1 && $byte_2 < 0xA0 )
 			) {
-				$byte_length += 3;
+				$this->bytes_already_read += 3;
 				continue;
 			}
 
@@ -2587,13 +2587,12 @@ class WP_MySQL_Lexer {
 			break;
 		}
 
-		// An identifier cannot consist solely of digits.
-		if (
-			strspn( $this->sql, self::DIGIT_MASK, $this->bytes_already_read, $byte_length ) === $byte_length
-		) {
-			return 0;
-		}
-		return $byte_length;
+		// An identifier cannot consist solely of digits, but we don't need to
+		// ensure that explicitly, as numbers are processed before identifiers.
+
+		return $this->bytes_already_read - $started_at > 0
+			? self::IDENTIFIER
+			: self::INVALID_INPUT;
 	}
 
 	private function determine_identifier_or_keyword_type( string $value ): int {
@@ -2656,9 +2655,8 @@ class WP_MySQL_Lexer {
 	}
 
 	private function read_number(): int {
-		$started_at = $this->bytes_already_read;
-		$byte       = $this->sql[ $this->bytes_already_read ] ?? null;
-		$next_byte  = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
+		$byte      = $this->sql[ $this->bytes_already_read ] ?? null;
+		$next_byte = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
 
 		if (
 			// HEX number in the form of 0xN.
@@ -2728,17 +2726,13 @@ class WP_MySQL_Lexer {
 			self::INT_NUMBER === $type
 			|| ( '0' === $text[0] && ( 'b' === $text[1] || 'x' === $text[1] ) );
 
-		if ( $possible_identifier_prefix ) {
-			$at                       = $this->bytes_already_read;
-			$this->bytes_already_read = $started_at;
-			$bytes_parsed             = $this->parse_identifier();
-			$this->bytes_already_read = $at;
-
-			// When matched more than the number, it's an identifier.
-			if ( $started_at + $bytes_parsed > $this->bytes_already_read ) {
-				$this->bytes_already_read = $started_at + $bytes_parsed;
-				$type                     = self::IDENTIFIER;
-			}
+		// When we match some subsequent identifier bytes, it's an identifier.
+		// Note that the "$this->read_identifier()" method doesn't check that
+		// the identifier doesn't consist solely of digits. This is an advantage
+		// here, as we can look only at subsequent bytes instead of backtracking
+		// to the beginning of the number (for valid identifiers like 0b019).
+		if ( $possible_identifier_prefix && self::IDENTIFIER === $this->read_identifier() ) {
+			$type = self::IDENTIFIER;
 		}
 		return $type;
 	}
