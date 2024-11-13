@@ -2597,7 +2597,7 @@ class WP_MySQL_Lexer {
 	}
 
 	private function read_number(): int {
-		// @TODO: Support numeric-only identifier partes after "." (e.g., 1ea10.1).
+		// @TODO: Support numeric-only identifier parts after "." (e.g., 1ea10.1).
 
 		$byte      = $this->sql[ $this->bytes_already_read ] ?? null;
 		$next_byte = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
@@ -2662,19 +2662,31 @@ class WP_MySQL_Lexer {
 			}
 		}
 
-		// In MySQL, when an input matches both a number and an identifier, the number always wins.
-		// However, when the number is followed by a non-numeric identifier-like character, it is
-		// considered an identifier... unless it's a float number, which ignores subsequent input.
+		/*
+		 * In MySQL, when an input matches both a number and an identifier, the
+		 * number always wins. However, if the number is followed by a non-numeric
+		 * identifier-like character, then it is recognized as an identifier...
+		 * Unless it's a float number, which ignores any subsequent input.
+		 *
+		 * Examples:
+		 *  - "1234" (integer) vs. "1234a" (identifier)
+		 *  - "0b01" (bin)     vs. "0b012" (identifier)
+		 *  - "0xa1" (hex)     vs. "0xa1x" (identifier)
+		 *  - "12.3" (decimal) vs. "12.3a" (identifier)
+		 *  - "1e10" (float)   vs. "1e10a" (float, followed by identifier)
+		 */
 		$text                       = $this->get_current_token_bytes();
 		$possible_identifier_prefix =
 			self::INT_NUMBER === $type
 			|| ( '0' === $text[0] && ( 'b' === $text[1] || 'x' === $text[1] ) );
 
-		// When we match some subsequent identifier bytes, it's an identifier.
-		// Note that the "$this->read_identifier()" method doesn't check that
-		// the identifier doesn't consist solely of digits. This is an advantage
-		// here, as we can look only at subsequent bytes instead of backtracking
-		// to the beginning of the number (for valid identifiers like 0b019).
+		/*
+		 * When we match some subsequent identifier bytes, it's an identifier.
+		 * Note that the "$this->read_identifier()" method doesn't check that
+		 * the identifier doesn't consist solely of digits. This is an advantage
+		 * here, as we can look only at subsequent bytes instead of backtracking
+		 * to the beginning of the number (for valid identifiers like 0b019).
+		 */
 		if ( $possible_identifier_prefix && self::IDENTIFIER === $this->read_identifier() ) {
 			$type = self::IDENTIFIER;
 		}
@@ -2740,11 +2752,15 @@ class WP_MySQL_Lexer {
 		while ( true ) {
 			$at += strcspn( $this->sql, $quote, $at );
 
-			// Quotes can be escaped with a "\", except when NO_BACKSLASH_ESCAPES
-			// is set, in which case it is treated as a regular character.
-			//
-			// The quote is escaped only when the number of preceding backslashes
-			// is odd, as since a "\\" is simply an escaped backslash character.
+			/*
+			 * By default, quotes can be escaped with a "\".
+			 * When NO_BACKSLASH_ESCAPES SQL mode is active, the "\" treated as
+			 * a regular character.
+			 *
+			 * The quote is escaped only when the number of preceding backslashes
+			 * is odd - "\" is an escape sequence, "\\" is an escaped backslash,
+			 * "\\\" is an escaped backslash and an escape sequence, and so on.
+			 */
 			if ( ! $no_backslash_escapes ) {
 				for ($i = 0; '\\' === $this->sql[ $at - $i - 1 ]; $i += 1);
 				if ( 1 === $i % 2 ) {

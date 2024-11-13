@@ -67,7 +67,7 @@ class WP_Parser_Grammar {
 			 *
 			 *    query ::= EOF | ((simpleStatement | beginWork) ((SEMICOLON_SYMBOL EOF?) | EOF))
 			 *
-			 * We've factored rules like bitExpr* to separate rules like bitExpr_zero_or_more.
+			 * We've factored rule fragments, such as `EOF?`, into separate rules, such as `%EOF_zero_or_one`.
 			 * This is super useful for parsing, but it limits the API consumer's ability to
 			 * reason about the parse tree.
 			 *
