@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
  * Parser tests using the full MySQL server test suite.
  */
 class WP_MySQL_Server_Suite_Parser_Tests extends TestCase {
-	const TEST_DATA_PATH = __DIR__ . '/data/queries.csv';
+	const TEST_DATA_PATH = __DIR__ . '/data/mysql-server-tests-queries.csv';
 	const GRAMMAR_PATH   = __DIR__ . '/../../wp-includes/mysql/mysql-grammar.php';
 
 	/**
@@ -67,7 +67,7 @@ class WP_MySQL_Server_Suite_Parser_Tests extends TestCase {
 	}
 
 	public function data_parse_mysql_test_suite(): Generator {
-		$path   = __DIR__ . '/data/queries.csv';
+		$path   = __DIR__ . '/data/mysql-server-tests-queries.csv';
 		$handle = @fopen( $path, 'r' );
 		if ( false === $handle ) {
 			$this->fail( "Failed to open file '$path'." );

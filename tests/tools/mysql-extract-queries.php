@@ -2,7 +2,7 @@
 
 /**
  * This script scans MySQL server test files, extracts SQL queries from them,
- * and saves the queries in a CSV file under "tests/mysql/data/queries.csv".
+ * and saves them as CSV under "tests/mysql/data/mysql-server-tests-queries.csv".
  *
  * The test files first need to be downloaded from the MySQL server repository.
  * See the "mysql-download-tests.sh" script for more details.
@@ -25,7 +25,7 @@
 
 // Paths:
 $data_dir   = __DIR__ . '/../mysql/data';
-$query_file = $data_dir . '/queries.csv';
+$query_file = $data_dir . '/mysql-server-tests-queries.csv';
 
 // Comments and other prefixes to skip:
 $prefixes = array(

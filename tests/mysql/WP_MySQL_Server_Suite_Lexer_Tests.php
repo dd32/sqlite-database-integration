@@ -14,7 +14,7 @@ class WP_MySQL_Server_Suite_Lexer_Tests extends TestCase {
 	 * is too large for PHPUnit to run a test per query, causing memory errors.
 	 */
 	public function test_tokenize_mysql_test_suite(): void {
-		$path   = __DIR__ . '/data/queries.csv';
+		$path   = __DIR__ . '/data/mysql-server-tests-queries.csv';
 		$handle = @fopen( $path, 'r' );
 		if ( false === $handle ) {
 			$this->fail( "Failed to open file '$path'." );

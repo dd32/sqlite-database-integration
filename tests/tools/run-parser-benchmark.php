@@ -37,7 +37,7 @@ $grammar      = new WP_Parser_Grammar( $grammar_data );
 
 // Load the queries.
 $data_dir = __DIR__ . '/../mysql/data';
-$handle   = fopen( "$data_dir/queries.csv", 'r' );
+$handle   = fopen( "$data_dir/mysql-server-tests-queries.csv", 'r' );
 $records  = array();
 while ( ( $record = fgetcsv( $handle ) ) !== false ) {
 	$records[] = $record;
