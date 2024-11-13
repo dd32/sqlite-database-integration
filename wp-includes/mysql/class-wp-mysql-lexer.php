@@ -2291,7 +2291,7 @@ class WP_MySQL_Lexer {
 		$next_byte = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
 
 		if ( "'" === $byte || '"' === $byte || '`' === $byte ) {
-			$type = $this->read_quoted_text( $byte );
+			$type = $this->read_quoted_text();
 		} elseif ( $this->is_digit( $byte ) ) {
 			$type = $this->read_number();
 		} elseif ( '.' === $byte ) {
@@ -2726,7 +2726,8 @@ class WP_MySQL_Lexer {
 	 *
 	 * @param string $quote The quote character - ', ", or `.
 	 */
-	private function read_quoted_text( string $quote ): int {
+	private function read_quoted_text(): int {
+		$quote                     = $this->sql[ $this->bytes_already_read ];
 		$this->bytes_already_read += 1; // Consume the quote.
 
 		$no_backslash_escapes = $this->is_sql_mode_active(
