@@ -145,14 +145,20 @@ class WP_MySQL_Lexer_Tests extends TestCase {
 			array( '0b01xyz', array( WP_MySQL_Lexer::IDENTIFIER, WP_MySQL_Lexer::EOF ) ), // identifier
 			array( '0b', array( WP_MySQL_Lexer::IDENTIFIER, WP_MySQL_Lexer::EOF ) ), // identifier
 			array( "b'01'", array( WP_MySQL_Lexer::BIN_NUMBER, WP_MySQL_Lexer::EOF ) ),
-			array( "b'01xyz'", array( WP_MySQL_Lexer::BIN_NUMBER, WP_MySQL_Lexer::IDENTIFIER, WP_MySQL_Lexer::INVALID_INPUT, WP_MySQL_Lexer::EOF ) ),
+			array( "b'01xyz'", array( WP_MySQL_Lexer::INVALID_INPUT, WP_MySQL_Lexer::IDENTIFIER, WP_MySQL_Lexer::INVALID_INPUT, WP_MySQL_Lexer::EOF ) ),
+			array( "b''", array( WP_MySQL_Lexer::BIN_NUMBER, WP_MySQL_Lexer::EOF ) ),
+			array( "b'", array( WP_MySQL_Lexer::INVALID_INPUT, WP_MySQL_Lexer::EOF ) ),
+			array( "b'01", array( WP_MySQL_Lexer::INVALID_INPUT, WP_MySQL_Lexer::EOF ) ),
 
 			// hex
 			array( '0xab01', array( WP_MySQL_Lexer::HEX_NUMBER, WP_MySQL_Lexer::EOF ) ),
 			array( '0xab01xyz', array( WP_MySQL_Lexer::IDENTIFIER, WP_MySQL_Lexer::EOF ) ), // identifier
 			array( '0x', array( WP_MySQL_Lexer::IDENTIFIER, WP_MySQL_Lexer::EOF ) ), // identifier
 			array( "x'ab01'", array( WP_MySQL_Lexer::HEX_NUMBER, WP_MySQL_Lexer::EOF ) ),
-			array( "x'ab01xyz'", array( WP_MySQL_Lexer::HEX_NUMBER, WP_MySQL_Lexer::IDENTIFIER, WP_MySQL_Lexer::INVALID_INPUT, WP_MySQL_Lexer::EOF ) ),
+			array( "x'ab01xyz'", array( WP_MySQL_Lexer::INVALID_INPUT, WP_MySQL_Lexer::IDENTIFIER, WP_MySQL_Lexer::INVALID_INPUT, WP_MySQL_Lexer::EOF ) ),
+			array( "x''", array( WP_MySQL_Lexer::HEX_NUMBER, WP_MySQL_Lexer::EOF ) ),
+			array( "x'", array( WP_MySQL_Lexer::INVALID_INPUT, WP_MySQL_Lexer::EOF ) ),
+			array( "x'ab", array( WP_MySQL_Lexer::INVALID_INPUT, WP_MySQL_Lexer::EOF ) ),
 
 			// decimal
 			array( '123.456', array( WP_MySQL_Lexer::DECIMAL_NUMBER, WP_MySQL_Lexer::EOF ) ),

@@ -2615,6 +2615,12 @@ class WP_MySQL_Lexer {
 			$this->bytes_already_read += 2; // Consume "0x" or "x'".
 			$this->bytes_already_read += strspn( $this->sql, self::HEX_DIGIT_MASK, $this->bytes_already_read );
 			if ( $is_quoted ) {
+				if (
+					$this->bytes_already_read >= strlen( $this->sql )
+					|| "'" !== $this->sql[ $this->bytes_already_read ]
+				) {
+					return self::INVALID_INPUT;
+				}
 				$this->bytes_already_read += 1; // Consume the "'".
 			}
 			$type = self::HEX_NUMBER;
@@ -2632,6 +2638,12 @@ class WP_MySQL_Lexer {
 			$this->bytes_already_read += 2; // Consume "0b" or "b'".
 			$this->bytes_already_read += strspn( $this->sql, '01', $this->bytes_already_read );
 			if ( $is_quoted ) {
+				if (
+					$this->bytes_already_read >= strlen( $this->sql )
+					|| "'" !== $this->sql[ $this->bytes_already_read ]
+				) {
+					return self::INVALID_INPUT;
+				}
 				$this->bytes_already_read += 1; // Consume the "'".
 			}
 			$type = self::BIN_NUMBER;
