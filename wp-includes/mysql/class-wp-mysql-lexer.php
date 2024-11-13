@@ -2193,16 +2193,10 @@ class WP_MySQL_Lexer {
 			$this->token_starts_at = $this->bytes_already_read;
 			$type                  = $this->read_next_token();
 		} while (
-			in_array(
-				$type,
-				array(
-					self::WHITESPACE,
-					self::COMMENT,
-					self::MYSQL_COMMENT_START,
-					self::MYSQL_COMMENT_END,
-				),
-				true
-			)
+			self::WHITESPACE === $type
+			|| self::COMMENT === $type
+			|| self::MYSQL_COMMENT_START === $type
+			|| self::MYSQL_COMMENT_END === $type
 		);
 		return new WP_MySQL_Token( $type, $this->get_current_token_bytes() );
 	}
