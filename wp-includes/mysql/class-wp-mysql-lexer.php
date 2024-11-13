@@ -41,6 +41,7 @@ class WP_MySQL_Lexer {
 	 */
 	const WHITESPACE_MASK = " \t\n\r\f";
 	const DIGIT_MASK      = '0123456789';
+	const HEX_DIGIT_MASK  = '0123456789abcdefABCDEF';
 
 	/**
 	 * Tokens from the MySQL Workbench "predefined.tokens" list.
@@ -2480,8 +2481,6 @@ class WP_MySQL_Lexer {
 		} elseif ( null !== $byte && strspn( $byte, self::WHITESPACE_MASK ) > 0 ) {
 			$this->bytes_already_read += strspn( $this->sql, self::WHITESPACE_MASK, $this->bytes_already_read );
 			$type                      = self::WHITESPACE;
-		} elseif ( '0' === $byte && ( 'x' === $next_byte || 'b' === $next_byte ) ) {
-			$type = $this->read_number();
 		} elseif ( ( 'x' === $byte || 'X' === $byte || 'b' === $byte || 'B' === $byte ) && "'" === $next_byte ) {
 			$type = $this->read_number();
 		} elseif ( ( 'n' === $byte || 'N' === $byte ) && "'" === $next_byte ) {
@@ -2597,25 +2596,35 @@ class WP_MySQL_Lexer {
 	private function read_number(): int {
 		// @TODO: Support numeric-only identifier parts after "." (e.g., 1ea10.1).
 
-		$byte      = $this->sql[ $this->bytes_already_read ] ?? null;
-		$next_byte = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
+		$byte       = $this->sql[ $this->bytes_already_read ] ?? null;
+		$next_byte  = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
+		$third_byte = $this->sql[ $this->bytes_already_read + 2 ] ?? null;
 
 		if (
 			// HEX number in the form of 0xN.
-			( '0' === $byte && 'x' === $next_byte )
+			(
+				'0' === $byte
+				&& 'x' === $next_byte
+				&& null !== $third_byte
+				&& strspn( $third_byte, self::HEX_DIGIT_MASK ) > 0
+			)
 			// HEX number in the form of x'N' or X'N'.
 			|| ( ( 'x' === $byte || 'X' === $byte ) && "'" === $next_byte )
 		) {
 			$is_quoted                 = "'" === $next_byte;
 			$this->bytes_already_read += 2; // Consume "0x" or "x'".
-			$this->bytes_already_read += strspn( $this->sql, '0123456789abcdefABCDEF', $this->bytes_already_read );
+			$this->bytes_already_read += strspn( $this->sql, self::HEX_DIGIT_MASK, $this->bytes_already_read );
 			if ( $is_quoted ) {
 				$this->bytes_already_read += 1; // Consume the "'".
 			}
 			$type = self::HEX_NUMBER;
 		} elseif (
 			// BIN number in the form of 0bN.
-			( '0' === $byte && 'b' === $next_byte )
+			(
+				'0' === $byte
+				&& 'b' === $next_byte
+				&& ( '0' === $third_byte || '1' === $third_byte )
+			)
 			// BIN number in the form of b'N' or B'N'.
 			|| ( ( 'b' === $byte || 'B' === $byte ) && "'" === $next_byte )
 		) {
