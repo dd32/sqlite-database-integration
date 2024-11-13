@@ -2286,10 +2286,10 @@ class WP_MySQL_Lexer {
 
 		if ( "'" === $byte || '"' === $byte || '`' === $byte ) {
 			$type = $this->read_quoted_text();
-		} elseif ( $this->is_digit( $byte ) ) {
+		} elseif ( null !== $byte && strspn( $byte, self::DIGIT_MASK ) > 0 ) {
 			$type = $this->read_number();
 		} elseif ( '.' === $byte ) {
-			if ( $this->is_digit( $next_byte ) ) {
+			if ( null !== $next_byte && strspn( $next_byte, self::DIGIT_MASK ) > 0 ) {
 				$type = $this->read_number();
 			} else {
 				$this->bytes_already_read += 1;
@@ -2348,7 +2348,11 @@ class WP_MySQL_Lexer {
 			$this->bytes_already_read += 1;
 			$type                      = self::PLUS_OPERATOR;
 		} elseif ( '-' === $byte ) {
-			if ( '-' === $next_byte && $this->is_whitespace( $this->sql[ $this->bytes_already_read + 2 ] ?? null ) ) {
+			if (
+				'-' === $next_byte
+				&& $this->bytes_already_read + 2 < strlen( $this->sql )
+				&& strspn( $this->sql[ $this->bytes_already_read + 2 ], self::WHITESPACE_MASK ) > 0
+			) {
 				$type = $this->read_line_comment();
 			} elseif ( '>' === $next_byte ) {
 				$this->bytes_already_read += 2; // Consume the '->'.
@@ -2473,7 +2477,7 @@ class WP_MySQL_Lexer {
 			}
 		} elseif ( '#' === $byte ) {
 			$type = $this->read_line_comment();
-		} elseif ( $this->is_whitespace( $byte ) ) {
+		} elseif ( null !== $byte && strspn( $byte, self::WHITESPACE_MASK ) > 0 ) {
 			$this->bytes_already_read += strspn( $this->sql, self::WHITESPACE_MASK, $this->bytes_already_read );
 			$type                      = self::WHITESPACE;
 		} elseif ( '0' === $byte && ( 'x' === $next_byte || 'b' === $next_byte ) ) {
@@ -2641,11 +2645,13 @@ class WP_MySQL_Lexer {
 			$next_byte    = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
 			$has_exponent =
 				( 'e' === $byte || 'E' === $byte )
+				&& null !== $next_byte
 				&& (
-					$this->is_digit( $next_byte )
+					strspn( $next_byte, self::DIGIT_MASK ) > 0
 					|| (
 						( '+' === $next_byte || '-' === $next_byte )
-						&& $this->is_digit( $this->sql[ $this->bytes_already_read + 2 ] ?? null )
+						&& $this->bytes_already_read + 2 < strlen( $this->sql )
+						&& strspn( $this->sql[ $this->bytes_already_read + 2 ], self::DIGIT_MASK ) > 0
 					)
 				);
 			if ( $has_exponent ) {
@@ -2838,14 +2844,6 @@ class WP_MySQL_Lexer {
 				break;
 			}
 		}
-	}
-
-	private function is_whitespace( ?string $byte ): bool {
-		return null !== $byte && strspn( $byte, self::WHITESPACE_MASK ) > 0;
-	}
-
-	private function is_digit( ?string $byte ): bool {
-		return null !== $byte && strspn( $byte, self::DIGIT_MASK ) > 0;
 	}
 
 	private function determine_identifier_or_keyword_type( string $value ): int {
