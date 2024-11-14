@@ -936,9 +936,8 @@ class WP_MySQL_Lexer {
 	const MYSQL_COMMENT_END   = 902;
 
 	// Special tokens
-	const WHITESPACE    = 0;
-	const EOF           = -1;
-	const INVALID_INPUT = -2;
+	const WHITESPACE = 0;
+	const EOF        = -1;
 
 	/**
 	 * A map of SQL keyword string values to their corresponding token types.
@@ -2152,6 +2151,17 @@ class WP_MySQL_Lexer {
 	private $token_starts_at = 0;
 
 	/**
+	 * The type of the current token.
+	 *
+	 * When a token is successfully recognized and read, this value is set to the
+	 * constant representing the token type. When no token was read yet, or the
+	 * end of the SQL payload or an invalid token is reached, this value is null.
+	 *
+	 * @var int|null
+	 */
+	private $token_type;
+
+	/**
 	 * Whether the tokenizer is inside an active MySQL-specific comment.
 	 *
 	 * MySQL supports a special comment syntax whose content is recognized as
@@ -2184,22 +2194,56 @@ class WP_MySQL_Lexer {
 	 *
 	 * This method reads bytes from the SQL payload until a token is recognized.
 	 * It starts from "$this->sql[ $this->bytes_already_read ]", advances the
-	 * number of bytes read, and returns a WP_MySQL_Token object. When the end of
-	 * the SQL payload is reached, the method always returns an EOF token.
+	 * number of bytes read, and returns a boolean indicating whether a token
+	 * was successfully recognized and read. When the end of the SQL payload
+	 * or an invalid token is reached, the method returns false.
 	 *
-	 * @return WP_MySQL_Token A token object representing the next recognized token.
+	 * @return bool Whether a token was successfully recognized and read.
 	 */
-	public function next_token(): WP_MySQL_Token {
+	public function next_token(): bool {
+		// We already reached the end of the SQL payload or an invalid token.
+		// Don't attempt to read any more bytes, and bail out immediately.
+		if (
+			self::EOF === $this->token_type
+			|| ( null === $this->token_type && $this->bytes_already_read > 0 )
+		) {
+			$this->token_type = null;
+			return false;
+		}
+
 		do {
 			$this->token_starts_at = $this->bytes_already_read;
-			$type                  = $this->read_next_token();
+			$this->token_type      = $this->read_next_token();
 		} while (
-			self::WHITESPACE === $type
-			|| self::COMMENT === $type
-			|| self::MYSQL_COMMENT_START === $type
-			|| self::MYSQL_COMMENT_END === $type
+			self::WHITESPACE === $this->token_type
+			|| self::COMMENT === $this->token_type
+			|| self::MYSQL_COMMENT_START === $this->token_type
+			|| self::MYSQL_COMMENT_END === $this->token_type
 		);
-		return new WP_MySQL_Token( $type, $this->get_current_token_bytes() );
+
+		// Invalid input.
+		if ( null === $this->token_type ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Return the current token represented as a WP_MySQL_Token object.
+	 *
+	 * When no token was read yet, or the end of the SQL payload or an invalid
+	 * token is reached, the method returns null.
+	 *
+	 * @TODO: Consider referential stability ($lexer->get_token() === $lexer->get_token()),
+	 *        or separate getters for the token type and token bytes (no token objects).
+	 *
+	 * @return WP_MySQL_Token|null An object representing the next recognized token or null.
+	 */
+	public function get_token(): ?WP_MySQL_Token {
+		if ( null === $this->token_type ) {
+			return null;
+		}
+		return new WP_MySQL_Token( $this->token_type, $this->get_current_token_bytes() );
 	}
 
 	/**
@@ -2209,17 +2253,20 @@ class WP_MySQL_Lexer {
 	 * by "$this->sql[ $this->bytes_already_read ]", and reads all tokens until
 	 * the end of the SQL payload is reached, returning an array of token objects.
 	 *
-	 * It can be used to tokenize the whole SQL payload at once, at the expense of
-	 * storing all token objects in memory at the same time.
+	 * When an invalid token is reached, the method stops and returns the partial
+	 * sequence of valid tokens. In this case, the EOF token will not be included.
+	 *
+	 * This method can be used to tokenize the whole SQL payload at once, at the
+	 * expense of storing all token objects in memory at the same time.
 	 *
 	 * @return WP_MySQL_Token[] An array of token objects representing the remaining tokens.
 	 */
 	public function remaining_tokens(): array {
 		$tokens = array();
-		do {
-			$token    = $this->next_token();
+		while ( true === $this->next_token() ) {
+			$token    = $this->get_token();
 			$tokens[] = $token;
-		} while ( WP_MySQL_Lexer::EOF !== $token->type );
+		}
 		return $tokens;
 	}
 
@@ -2281,7 +2328,7 @@ class WP_MySQL_Lexer {
 		return $token_name ? $token_name : null;
 	}
 
-	private function read_next_token(): int {
+	private function read_next_token(): ?int {
 		$byte      = $this->sql[ $this->bytes_already_read ] ?? null;
 		$next_byte = $this->sql[ $this->bytes_already_read + 1 ] ?? null;
 
@@ -2362,13 +2409,13 @@ class WP_MySQL_Lexer {
 					if ( $this->mysql_version >= 50713 ) {
 						$type = self::JSON_UNQUOTED_SEPARATOR_SYMBOL;
 					} else {
-						$type = self::INVALID_INPUT;
+						return null; // Invalid input.
 					}
 				} else {
 					if ( $this->mysql_version >= 50708 ) {
 						$type = self::JSON_SEPARATOR_SYMBOL;
 					} else {
-						$type = self::INVALID_INPUT;
+						return null; // Invalid input.
 					}
 				}
 			} else {
@@ -2474,7 +2521,7 @@ class WP_MySQL_Lexer {
 				$this->bytes_already_read += 1; // Consume the 'N'.
 				$type                      = self::NULL2_SYMBOL;
 			} else {
-				$type = self::INVALID_INPUT;
+				return null; // Invalid input.
 			}
 		} elseif ( '#' === $byte ) {
 			$type = $this->read_line_comment();
@@ -2531,7 +2578,7 @@ class WP_MySQL_Lexer {
 	 *  See:
 	 *    https://dev.mysql.com/doc/refman/8.4/en/identifiers.html
 	 */
-	private function read_identifier(): int {
+	private function read_identifier(): ?int {
 		$started_at = $this->bytes_already_read;
 		while ( true ) {
 			// First, let's try to parse an ASCII sequence.
@@ -2590,10 +2637,10 @@ class WP_MySQL_Lexer {
 
 		return $this->bytes_already_read - $started_at > 0
 			? self::IDENTIFIER
-			: self::INVALID_INPUT;
+			: null; // Invalid input.
 	}
 
-	private function read_number(): int {
+	private function read_number(): ?int {
 		// @TODO: Support numeric-only identifier parts after "." (e.g., 1ea10.1).
 
 		$byte       = $this->sql[ $this->bytes_already_read ] ?? null;
@@ -2619,7 +2666,7 @@ class WP_MySQL_Lexer {
 					$this->bytes_already_read >= strlen( $this->sql )
 					|| "'" !== $this->sql[ $this->bytes_already_read ]
 				) {
-					return self::INVALID_INPUT;
+					return null; // Invalid input.
 				}
 				$this->bytes_already_read += 1; // Consume the "'".
 			}
@@ -2642,7 +2689,7 @@ class WP_MySQL_Lexer {
 					$this->bytes_already_read >= strlen( $this->sql )
 					|| "'" !== $this->sql[ $this->bytes_already_read ]
 				) {
-					return self::INVALID_INPUT;
+					return null; // Invalid input.
 				}
 				$this->bytes_already_read += 1; // Consume the "'".
 			}
@@ -2759,7 +2806,7 @@ class WP_MySQL_Lexer {
 	 *
 	 * @param string $quote The quote character - ', ", or `.
 	 */
-	private function read_quoted_text(): int {
+	private function read_quoted_text(): ?int {
 		$quote                     = $this->sql[ $this->bytes_already_read ];
 		$this->bytes_already_read += 1; // Consume the quote.
 
@@ -2792,7 +2839,7 @@ class WP_MySQL_Lexer {
 
 			// Unclosed string - unexpected EOF.
 			if ( ( $this->sql[ $at ] ?? null ) !== $quote ) {
-				return self::INVALID_INPUT;
+				return null; // Invalid input.
 			}
 
 			// Check if the quote is doubled.
