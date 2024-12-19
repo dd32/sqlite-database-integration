@@ -4,6 +4,8 @@
 namespace WIP;
 
 use PDOStatement;
+use WP_MySQL_Lexer;
+use WP_Parser_Node;
 
 class WP_SQLite_Information_Schema_Builder {
 	/**
@@ -28,28 +30,28 @@ class WP_SQLite_Information_Schema_Builder {
 	const CREATE_INFORMATION_SCHEMA_QUERIES = array(
 		// TABLES
 		"CREATE TABLE IF NOT EXISTS _mysql_information_schema_tables (
-			TABLE_CATALOG TEXT NOT NULL DEFAULT 'def',
-			TABLE_SCHEMA TEXT NOT NULL,
-			TABLE_NAME TEXT NOT NULL,
-			TABLE_TYPE TEXT NOT NULL,
-			ENGINE TEXT NOT NULL,
-			VERSION INTEGER NOT NULL DEFAULT 10,
-			ROW_FORMAT TEXT NOT NULL,
-			TABLE_ROWS INTEGER NOT NULL DEFAULT 0,
-			AVG_ROW_LENGTH INTEGER NOT NULL DEFAULT 0,
-			DATA_LENGTH INTEGER NOT NULL DEFAULT 0,
-			MAX_DATA_LENGTH INTEGER NOT NULL DEFAULT 0,
-			INDEX_LENGTH INTEGER NOT NULL DEFAULT 0,
-			DATA_FREE INTEGER NOT NULL DEFAULT 0,
-			AUTO_INCREMENT INTEGER,
-			CREATE_TIME TEXT NOT NULL
+			TABLE_CATALOG TEXT NOT NULL DEFAULT 'def',  -- always 'def'
+			TABLE_SCHEMA TEXT NOT NULL,                 -- database name
+			TABLE_NAME TEXT NOT NULL,                   -- table name
+			TABLE_TYPE TEXT NOT NULL,                   -- 'BASE TABLE' or 'VIEW'
+			ENGINE TEXT NOT NULL,                       -- storage engine
+			VERSION INTEGER NOT NULL DEFAULT 10,        -- unused, in MySQL 8 hardcoded to 10
+			ROW_FORMAT TEXT NOT NULL,                   -- row storage format @TODO - implement
+			TABLE_ROWS INTEGER NOT NULL DEFAULT 0,      -- not implemented
+			AVG_ROW_LENGTH INTEGER NOT NULL DEFAULT 0,  -- not implemented
+			DATA_LENGTH INTEGER NOT NULL DEFAULT 0,     -- not implemented
+			MAX_DATA_LENGTH INTEGER NOT NULL DEFAULT 0, -- not implemented
+			INDEX_LENGTH INTEGER NOT NULL DEFAULT 0,    -- not implemented
+			DATA_FREE INTEGER NOT NULL DEFAULT 0,       -- not implemented
+			AUTO_INCREMENT INTEGER,                     -- not implemented
+			CREATE_TIME TEXT NOT NULL                   -- table creation timestamp
 				DEFAULT CURRENT_TIMESTAMP,
-			UPDATE_TIME TEXT,
-			CHECK_TIME TEXT,
-			TABLE_COLLATION TEXT NOT NULL,
-			CHECKSUM INTEGER,
-			CREATE_OPTIONS TEXT,
-			TABLE_COMMENT TEXT NOT NULL DEFAULT ''
+			UPDATE_TIME TEXT,                           -- table update time
+			CHECK_TIME TEXT,                            -- not implemented
+			TABLE_COLLATION TEXT NOT NULL,              -- table collation
+			CHECKSUM INTEGER,                           -- not implemented
+			CREATE_OPTIONS TEXT,                        -- extra CREATE TABLE options
+			TABLE_COMMENT TEXT NOT NULL DEFAULT ''      -- comment
 		) STRICT",
 
 		// COLUMNS
@@ -237,6 +239,109 @@ class WP_SQLite_Information_Schema_Builder {
 		foreach ( self::CREATE_INFORMATION_SCHEMA_QUERIES as $query ) {
 			$this->query( $query );
 		}
+	}
+
+	/**
+	 * Analyze CREATE TABLE statement and record data in the information schema.
+	 *
+	 * @param WP_Parser_Node $node AST node representing a CREATE TABLE statement.
+	 */
+	public function record_create_table( WP_Parser_Node $node ): void {
+		$table_name       = $this->get_value( $node->get_descendant_node( 'tableName' ) );
+		$table_engine     = $this->get_table_engine( $node );
+		$table_row_format = 'MyISAM' === $table_engine ? 'FIXED' : 'DYNAMIC';
+		$table_collation  = $this->get_table_collation( $node );
+
+		// 1. Table.
+		$this->insert_values(
+			'_mysql_information_schema_tables',
+			array(
+				'table_schema'    => $this->db_name,
+				'table_name'      => $table_name,
+				'table_type'      => 'BASE TABLE',
+				'engine'          => $table_engine,
+				'row_format'      => $table_row_format,
+				'table_collation' => $table_collation,
+			)
+		);
+	}
+
+	private function get_table_engine( WP_Parser_Node $node ): string {
+		$engine_node = $node->get_descendant_node( 'engineRef' );
+		if ( null === $engine_node ) {
+			return 'InnoDB';
+		}
+
+		$engine = strtoupper( $this->get_value( $engine_node ) );
+		if ( 'INNODB' === $engine ) {
+			return 'InnoDB';
+		} elseif ( 'MYISAM' === $engine ) {
+			return 'MyISAM';
+		}
+		return $engine;
+	}
+
+	private function get_table_collation( WP_Parser_Node $node ): string {
+		$collate_node = $node->get_descendant_node( 'collationName' );
+		if ( null === $collate_node ) {
+			// @TODO: Use default DB collation or DB_CHARSET & DB_COLLATE.
+			return 'utf8mb4_general_ci';
+		}
+		return strtolower( $this->get_value( $collate_node ) );
+	}
+
+	/**
+	 * This is a helper function to get the full unescaped value of a node.
+	 *
+	 * @TODO: This should be done in a more correct way, for names maybe allowing
+	 *        descending only a single-child hierarchy, such as these:
+	 *          identifier -> pureIdentifier -> IDENTIFIER
+	 *          identifier -> pureIdentifier -> BACKTICK_QUOTED_ID
+	 *          identifier -> pureIdentifier -> DOUBLE_QUOTED_TEXT
+	 *          etc.
+	 *
+	 *        For saving "DEFAULT ..." in column definitions, we actually need to
+	 *        serialize the whole node, in the case of expressions. This may mean
+	 *        implementing an MySQL AST -> string printer.
+	 *
+	 * @param WP_Parser_Node $node
+	 * @return string
+	 */
+	private function get_value( WP_Parser_Node $node ): string {
+		$full_value = '';
+		foreach ( $node->get_children() as $child ) {
+			if ( $child instanceof WP_Parser_Node ) {
+				$value = $this->get_value( $child );
+			} elseif ( WP_MySQL_Lexer::BACK_TICK_QUOTED_ID === $child->id ) {
+				$value = substr( $child->value, 1, -1 );
+				$value = str_replace( '\`', '`', $value );
+				$value = str_replace( '``', '`', $value );
+			} elseif ( WP_MySQL_Lexer::SINGLE_QUOTED_TEXT === $child->id ) {
+				$value = $child->value;
+				$value = substr( $value, 1, -1 );
+				$value = str_replace( '\"', '"', $value );
+				$value = str_replace( '""', '"', $value );
+			} elseif ( WP_MySQL_Lexer::DOUBLE_QUOTED_TEXT === $child->id ) {
+				$value = $child->value;
+				$value = substr( $value, 1, -1 );
+				$value = str_replace( '\"', '"', $value );
+				$value = str_replace( '""', '"', $value );
+			} else {
+				$value = $child->value;
+			}
+			$full_value .= $value;
+		}
+		return $full_value;
+	}
+
+	private function insert_values( string $table_name, array $data ): void {
+		$this->query(
+			'
+				INSERT INTO ' . $table_name . ' (' . implode( ', ', array_keys( $data ) ) . ')
+				VALUES (' . implode( ', ', array_fill( 0, count( $data ), '?' ) ) . ')
+			',
+			array_values( $data )
+		);
 	}
 
 	/**
