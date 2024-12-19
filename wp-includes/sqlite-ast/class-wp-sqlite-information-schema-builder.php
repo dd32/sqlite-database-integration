@@ -516,6 +516,8 @@ class WP_SQLite_Information_Schema_Builder {
 
 			$seq_in_index += 1;
 		}
+
+		$this->sync_column_key_info( $table_name );
 	}
 
 	private function extract_column_data( string $table_name, string $column_name, WP_Parser_Node $node, int $position ): array {
@@ -584,6 +586,51 @@ class WP_SQLite_Information_Schema_Builder {
 			);
 		}
 		return null;
+	}
+
+	/**
+	 * Update column info from constraint data in the statistics table.
+	 *
+	 * When constraints are added or removed, we need to reflect the changes
+	 * in the "COLUMN_KEY" and "IS_NULLABLE" columns of the "COLUMNS" table.
+	 *
+	 *   A) COLUMN_KEY (priority from 1 to 4):
+	 *     1. "PRI": Column is any component of a PRIMARY KEY.
+	 *     2. "UNI": Column is the first column of a UNIQUE KEY.
+	 *     3. "MUL": Column is the first column of a non-unique index.
+	 *     4. "":    Column is not indexed.
+	 *
+	 *   B) IS_NULLABLE: In COLUMNS, "YES"/"NO". In STATISTICS, "YES"/"".
+	 */
+	private function sync_column_key_info( string $table_name ): void {
+		// @TODO: Consider listing only affected columns.
+		$this->query(
+			"
+				WITH s AS (
+					SELECT
+						column_name,
+						CASE
+							WHEN MAX(index_name = 'PRIMARY') THEN 'PRI'
+							WHEN MAX(non_unique = 0 AND seq_in_index = 1) THEN 'UNI'
+							WHEN MAX(seq_in_index = 1) THEN 'MUL'
+							ELSE ''
+						END AS column_key
+					FROM _mysql_information_schema_statistics
+					WHERE table_schema = ?
+					AND table_name = ?
+					GROUP BY column_name
+				)
+				UPDATE _mysql_information_schema_columns AS c
+				SET
+					column_key = s.column_key,
+					is_nullable = IIF(s.column_key = 'PRI', 'NO', c.is_nullable)
+			    FROM s
+			    WHERE c.table_schema = ?
+			    AND c.table_name = ?
+				AND s.column_name = c.column_name
+			",
+			array( $this->db_name, $table_name, $this->db_name, $table_name )
+		);
 	}
 
 	private function get_table_engine( WP_Parser_Node $node ): string {
