@@ -399,6 +399,21 @@ class WP_SQLite_Information_Schema_Builder {
 				$column_position
 			);
 			$this->insert_values( '_mysql_information_schema_columns', $column_data );
+
+			// Inline column constraint.
+			$column_constraint_data = $this->extract_column_constraint_data(
+				$table_name,
+				$column_name,
+				$column_node,
+				'YES' === $column_data['is_nullable']
+			);
+			if ( null !== $column_constraint_data ) {
+				$this->insert_values(
+					'_mysql_information_schema_statistics',
+					$column_constraint_data
+				);
+			}
+
 			$column_position += 1;
 		}
 
@@ -540,6 +555,35 @@ class WP_SQLite_Information_Schema_Builder {
 			'generation_expression'    => $generation_expression,
 			'srs_id'                   => null, // not implemented
 		);
+	}
+
+	private function extract_column_constraint_data( string $table_name, string $column_name, WP_Parser_Node $node, bool $nullable ): ?array {
+		// Handle inline PRIMARY KEY and UNIQUE constraints.
+		$has_inline_primary_key = null !== $node->get_descendant_token( WP_MySQL_Lexer::KEY_SYMBOL );
+		$has_inline_unique_key  = null !== $node->get_descendant_token( WP_MySQL_Lexer::UNIQUE_SYMBOL );
+		if ( $has_inline_primary_key || $has_inline_unique_key ) {
+			$index_name = $has_inline_primary_key ? 'PRIMARY' : $column_name;
+			return array(
+				'table_schema'  => $this->db_name,
+				'table_name'    => $table_name,
+				'non_unique'    => 0,
+				'index_schema'  => $this->db_name,
+				'index_name'    => $index_name,
+				'seq_in_index'  => 1,
+				'column_name'   => $column_name,
+				'collation'     => 'A',
+				'cardinality'   => 0, // not implemented
+				'sub_part'      => null,
+				'packed'        => null, // not implemented
+				'nullable'      => true === $nullable ? 'YES' : '',
+				'index_type'    => 'BTREE',
+				'comment'       => '', // not implemented
+				'index_comment' => '', // @TODO
+				'is_visible'    => 'YES', // @TODO: Save actual visibility value.
+				'expression'    => null, // @TODO
+			);
+		}
+		return null;
 	}
 
 	private function get_table_engine( WP_Parser_Node $node ): string {
