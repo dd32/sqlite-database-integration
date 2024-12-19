@@ -451,6 +451,13 @@ class WP_SQLite_Information_Schema_Builder {
 					continue;
 				}
 
+				// ADD CONSTRAINT.
+				$constraint = $action->get_descendant_node( 'tableConstraintDef' );
+				if ( null !== $constraint ) {
+					$this->record_add_constraint( $table_name, $constraint );
+					continue;
+				}
+
 				throw new \Exception( sprintf( 'Unsupported ALTER TABLE ADD action: %s', $first_token->value ) );
 			}
 		}
