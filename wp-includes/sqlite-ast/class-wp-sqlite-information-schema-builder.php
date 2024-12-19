@@ -3,8 +3,10 @@
 // @TODO: Remove the namespace and use statements when replacing the old driver.
 namespace WIP;
 
+use PDO;
 use PDOStatement;
 use WP_MySQL_Lexer;
+use WP_MySQL_Token;
 use WP_Parser_Node;
 
 class WP_SQLite_Information_Schema_Builder {
@@ -98,24 +100,24 @@ class WP_SQLite_Information_Schema_Builder {
 
 		// STATISTICS (indexes)
 		"CREATE TABLE IF NOT EXISTS _mysql_information_schema_statistics (
-			TABLE_CATALOG TEXT NOT NULL DEFAULT 'def',
-			TABLE_SCHEMA TEXT NOT NULL,
-			TABLE_NAME TEXT NOT NULL,
-			NON_UNIQUE INTEGER NOT NULL,
-			INDEX_SCHEMA TEXT NOT NULL,
-			INDEX_NAME TEXT NOT NULL,
-			SEQ_IN_INDEX INTEGER NOT NULL,
-			COLUMN_NAME TEXT,
-			COLLATION TEXT,
-			CARDINALITY INTEGER,
-			SUB_PART INTEGER,
-			PACKED TEXT,
-			NULLABLE TEXT NOT NULL,
-			INDEX_TYPE TEXT NOT NULL,
-			COMMENT TEXT NOT NULL DEFAULT '',
-			INDEX_COMMENT TEXT NOT NULL DEFAULT '',
-			IS_VISIBLE TEXT NOT NULL DEFAULT 'YES',
-			EXPRESSION TEXT
+			TABLE_CATALOG TEXT NOT NULL DEFAULT 'def', -- always 'def'
+			TABLE_SCHEMA TEXT NOT NULL,                -- database name
+			TABLE_NAME TEXT NOT NULL,                  -- table name
+			NON_UNIQUE INTEGER NOT NULL,               -- 0 for unique indexes, 1 otherwise
+			INDEX_SCHEMA TEXT NOT NULL,                -- index database name
+			INDEX_NAME TEXT NOT NULL,                  -- index name, for PKs always 'PRIMARY'
+			SEQ_IN_INDEX INTEGER NOT NULL,             -- column position in index (from 1)
+			COLUMN_NAME TEXT,                          -- column name (NULL for functional indexes)
+			COLLATION TEXT,                            -- column sort in the index ('A', 'D', or NULL)
+			CARDINALITY INTEGER,                       -- not implemented
+			SUB_PART INTEGER,                          -- number of indexed chars, NULL for full column
+			PACKED TEXT,                               -- not implemented
+			NULLABLE TEXT NOT NULL,                    -- 'YES' if column can contain NULL, '' otherwise
+			INDEX_TYPE TEXT NOT NULL,                  -- 'BTREE', 'FULLTEXT', 'SPATIAL'
+			COMMENT TEXT NOT NULL DEFAULT '',          -- not implemented
+			INDEX_COMMENT TEXT NOT NULL DEFAULT '',    -- index comment
+			IS_VISIBLE TEXT NOT NULL DEFAULT 'YES',    -- 'NO' if column is hidden, 'YES' otherwise
+			EXPRESSION TEXT                            -- expression for functional indexes
 		) STRICT",
 
 		// TABLE_CONSTRAINTS
@@ -398,6 +400,106 @@ class WP_SQLite_Information_Schema_Builder {
 			);
 			$this->insert_values( '_mysql_information_schema_columns', $column_data );
 			$column_position += 1;
+		}
+
+		// 3. Constraints.
+		foreach ( $node->get_descendant_nodes( 'tableConstraintDef' ) as $constraint_node ) {
+			$this->record_add_constraint( $table_name, $constraint_node );
+		}
+	}
+
+	private function record_add_constraint( string $table_name, WP_Parser_Node $node ): void {
+		// Get first constraint keyword.
+		$children = $node->get_children();
+		$keyword  = $children[0] instanceof WP_MySQL_Token ? $children[0] : $children[1];
+		if ( ! $keyword instanceof WP_MySQL_Token ) {
+			$keyword = $keyword->get_child_token();
+		}
+
+		if (
+			WP_MySQL_Lexer::FOREIGN_SYMBOL === $keyword->id
+			|| WP_MySQL_Lexer::CHECK_SYMBOL === $keyword->id
+		) {
+			throw new \Exception( 'FOREIGN KEY and CHECK constraints are not supported yet.' );
+		}
+
+		// Fetch column info.
+		$column_info = $this->query(
+			'
+				SELECT column_name, data_type, is_nullable, character_maximum_length
+				FROM _mysql_information_schema_columns
+				WHERE table_name = ?
+			',
+			array( $table_name )
+		)->fetchAll( PDO::FETCH_ASSOC );
+
+		$column_info_map = array_combine(
+			array_column( $column_info, 'COLUMN_NAME' ),
+			$column_info
+		);
+
+		// Get first index column data type (needed for index type).
+		$first_column_name  = $column_info[0]['COLUMN_NAME'];
+		$first_column_type  = $column_info_map[ $first_column_name ]['DATA_TYPE'] ?? null;
+		$has_spatial_column = null !== $first_column_type && $this->is_spatial_data_type( $first_column_type );
+
+		$non_unique = $this->get_index_non_unique( $keyword );
+		$index_name = $this->get_index_name( $node );
+		$index_type = $this->get_index_type( $node, $keyword, $has_spatial_column );
+
+		$key_list = $node->get_child_node( 'keyListVariants' )->get_child();
+		if ( 'keyListWithExpression' === $key_list->rule_name ) {
+			$key_parts = array();
+			foreach ( $key_list->get_descendant_nodes( 'keyPartOrExpression' ) as $key_part ) {
+				$key_parts[] = $key_part->get_child();
+			}
+		} else {
+			$key_parts = $key_list->get_descendant_nodes( 'keyPart' );
+		}
+
+		$seq_in_index = 1;
+		foreach ( $key_parts as $key_part ) {
+			$column_name = $this->get_index_column_name( $key_part );
+			$collation   = $this->get_index_column_collation( $key_part, $index_type );
+			if (
+				'PRIMARY' === $index_name
+				|| 'NO' === $column_info_map[ $column_name ]['IS_NULLABLE']
+			) {
+				$nullable = '';
+			} else {
+				$nullable = 'YES';
+			}
+
+			$sub_part = $this->get_index_column_sub_part(
+				$key_part,
+				$column_info_map[ $column_name ]['CHARACTER_MAXIMUM_LENGTH'],
+				$has_spatial_column
+			);
+
+			$this->insert_values(
+				'_mysql_information_schema_statistics',
+				array(
+					'table_schema'  => $this->db_name,
+					'table_name'    => $table_name,
+					'non_unique'    => $non_unique,
+					'index_schema'  => $this->db_name,
+					'index_name'    => $index_name,
+					'seq_in_index'  => $seq_in_index,
+					'column_name'   => $column_name,
+					'collation'     => $collation,
+					'cardinality'   => 0, // not implemented
+					'sub_part'      => $sub_part,
+					'packed'        => null, // not implemented
+					'nullable'      => $nullable,
+					'index_type'    => $index_type,
+					'comment'       => '', // not implemented
+					'index_comment' => '', // @TODO
+					'is_visible'    => 'YES', // @TODO: Save actual visibility value.
+					'expression'    => null, // @TODO
+				)
+			);
+
+			$seq_in_index += 1;
 		}
 	}
 
@@ -894,6 +996,127 @@ class WP_SQLite_Information_Schema_Builder {
 			return $this->get_value( $expr );
 		}
 		return '';
+	}
+
+	private function get_index_name( WP_Parser_Node $node ): string {
+		if ( $node->get_descendant_token( WP_MySQL_Lexer::PRIMARY_SYMBOL ) ) {
+			return 'PRIMARY';
+		}
+
+		$name_node = $node->get_descendant_node( 'indexName' );
+		if ( null === $name_node ) {
+			/*
+			 * In MySQL, the default index name equals the first column name.
+			 * For functional indexes, the string "functional_index" is used.
+			 * If the name is already used, we need to append a number.
+			 */
+			$subnode = $node->get_child_node( 'keyListVariants' )->get_child_node();
+			if ( 'exprWithParentheses' === $subnode->rule_name ) {
+				$name = 'functional_index';
+			} else {
+				$name = $this->get_value( $subnode->get_descendant_node( 'identifier' ) );
+			}
+
+			// @TODO: Check if the name is already used.
+			return $name;
+		}
+		return $this->get_value( $name_node );
+	}
+
+	private function get_index_non_unique( WP_MySQL_Token $token ): int {
+		if (
+			WP_MySQL_Lexer::PRIMARY_SYMBOL === $token->id
+			|| WP_MySQL_Lexer::UNIQUE_SYMBOL === $token->id
+		) {
+			return 0;
+		}
+		return 1;
+	}
+
+	private function get_index_type(
+		WP_Parser_Node $node,
+		WP_MySQL_Token $token,
+		bool $has_spatial_column
+	): string {
+		// Handle "USING ..." clause.
+		$index_type = $node->get_descendant_node( 'indexTypeClause' );
+		if ( null !== $index_type ) {
+			$index_type = strtoupper(
+				$this->get_value( $index_type->get_child_node( 'indexType' ) )
+			);
+			if ( 'RTREE' === $index_type ) {
+				return 'SPATIAL';
+			} elseif ( 'HASH' === $index_type ) {
+				// InnoDB uses BTREE even when HASH is specified.
+				return 'BTREE';
+			}
+			return $index_type;
+		}
+
+		// Derive index type from its definition.
+		if ( WP_MySQL_Lexer::FULLTEXT_SYMBOL === $token->id ) {
+			return 'FULLTEXT';
+		} elseif ( WP_MySQL_Lexer::SPATIAL_SYMBOL === $token->id ) {
+			return 'SPATIAL';
+		}
+
+		// Spatial indexes are also derived from column data type.
+		if ( $has_spatial_column ) {
+			return 'SPATIAL';
+		}
+
+		return 'BTREE';
+	}
+
+	private function get_index_column_name( WP_Parser_Node $node ): ?string {
+		if ( 'keyPart' !== $node->rule_name ) {
+			return null;
+		}
+		return $this->get_value( $node->get_descendant_node( 'identifier' ) );
+	}
+
+	private function get_index_column_collation( WP_Parser_Node $node, string $index_type ): ?string {
+		if ( 'FULLTEXT' === $index_type ) {
+			return null;
+		}
+
+		$collate_node = $node->get_descendant_node( 'collationName' );
+		if ( null === $collate_node ) {
+			return 'A';
+		}
+		$collate = strtoupper( $this->get_value( $collate_node ) );
+		return 'DESC' === $collate ? 'D' : 'A';
+	}
+
+	private function get_index_column_sub_part(
+		WP_Parser_Node $node,
+		?int $max_length,
+		bool $is_spatial
+	): ?int {
+		$field_length = $node->get_descendant_node( 'fieldLength' );
+		if ( null === $field_length ) {
+			if ( $is_spatial ) {
+				return 32;
+			}
+			return null;
+		}
+
+		$value = (int) trim( $this->get_value( $field_length ), '()' );
+		if ( null !== $max_length && $value >= $max_length ) {
+			return $max_length;
+		}
+		return $value;
+	}
+
+	private function is_spatial_data_type( string $data_type ): bool {
+		return 'geometry' === $data_type
+			|| 'geomcollection' === $data_type
+			|| 'point' === $data_type
+			|| 'multipoint' === $data_type
+			|| 'linestring' === $data_type
+			|| 'multilinestring' === $data_type
+			|| 'polygon' === $data_type
+			|| 'multipolygon' === $data_type;
 	}
 
 	/**
