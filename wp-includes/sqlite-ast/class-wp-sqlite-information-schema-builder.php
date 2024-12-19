@@ -460,6 +460,30 @@ class WP_SQLite_Information_Schema_Builder {
 
 				throw new \Exception( sprintf( 'Unsupported ALTER TABLE ADD action: %s', $first_token->value ) );
 			}
+
+			// CHANGE [COLUMN]
+			if ( WP_MySQL_Lexer::CHANGE_SYMBOL === $first_token->id ) {
+				$old_name = $this->get_value( $action->get_child_node( 'columnInternalRef' ) );
+				$new_name = $this->get_value( $action->get_child_node( 'identifier' ) );
+				$this->record_change_column(
+					$table_name,
+					$old_name,
+					$new_name,
+					$action->get_descendant_node( 'fieldDefinition' )
+				);
+				continue;
+			}
+
+			// MODIFY [COLUMN]
+			if ( WP_MySQL_Lexer::MODIFY_SYMBOL === $first_token->id ) {
+				$name = $this->get_value( $action->get_child_node( 'columnInternalRef' ) );
+				$this->record_modify_column(
+					$table_name,
+					$name,
+					$action->get_descendant_node( 'fieldDefinition' )
+				);
+				continue;
+			}
 		}
 	}
 
@@ -476,6 +500,58 @@ class WP_SQLite_Information_Schema_Builder {
 		if ( null !== $column_constraint_data ) {
 			$this->insert_values( '_mysql_information_schema_statistics', $column_constraint_data );
 		}
+	}
+
+	private function record_change_column(
+		string $table_name,
+		string $column_name,
+		string $new_column_name,
+		WP_Parser_Node $node
+	): void {
+		$column_data = $this->extract_column_data( $table_name, $new_column_name, $node, 0 );
+		$this->update_values(
+			'_mysql_information_schema_columns',
+			$column_data,
+			array(
+				'table_name'  => $table_name,
+				'column_name' => $column_name,
+			)
+		);
+
+		// Update column name in statistics, if it has changed.
+		if ( $new_column_name !== $column_name ) {
+			$this->update_values(
+				'_mysql_information_schema_statistics',
+				array(
+					'column_name' => $new_column_name,
+				),
+				array(
+					'table_name'  => $table_name,
+					'column_name' => $column_name,
+				)
+			);
+		}
+
+		// Handle inline constraints. When inline constraint is defined, MySQL
+		// always adds a new constraint rather than replacing an existing one.
+		$column_constraint_data = $this->extract_column_constraint_data(
+			$table_name,
+			$new_column_name,
+			$node,
+			'YES' === $column_data['is_nullable']
+		);
+		if ( null !== $column_constraint_data ) {
+			$this->insert_values( '_mysql_information_schema_statistics', $column_constraint_data );
+			$this->sync_column_key_info( $table_name );
+		}
+	}
+
+	private function record_modify_column(
+		string $table_name,
+		string $column_name,
+		WP_Parser_Node $node
+	): void {
+		$this->record_change_column( $table_name, $column_name, $column_name, $node );
 	}
 
 	private function record_add_constraint( string $table_name, WP_Parser_Node $node ): void {
