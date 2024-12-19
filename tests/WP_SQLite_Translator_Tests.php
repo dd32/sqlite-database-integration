@@ -267,6 +267,8 @@ class WP_SQLite_Translator_Tests extends TestCase {
 				ID BIGINT PRIMARY KEY AUTO_INCREMENT NOT NULL,
 				option_name VARCHAR(255) default '',
 				option_value TEXT NOT NULL,
+				lorem BINARY(128) default '',
+				ipsum TINYTEXT(32) default '',
 				UNIQUE KEY option_name (option_name(100)),
 				KEY composite (option_name(100), option_value(100))
 			);"
@@ -282,6 +284,8 @@ class WP_SQLite_Translator_Tests extends TestCase {
 	`ID` bigint NOT NULL AUTO_INCREMENT,
 	`option_name` varchar(255) DEFAULT '',
 	`option_value` text NOT NULL DEFAULT '',
+	`lorem` binary(128) DEFAULT '',
+	`ipsum` tinytext(32) DEFAULT '',
 	PRIMARY KEY (`ID`),
 	KEY `composite` (`option_name`(100), `option_value`(100)),
 	UNIQUE KEY `option_name` (`option_name`(100))

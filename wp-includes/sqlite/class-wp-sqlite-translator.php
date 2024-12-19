@@ -3766,8 +3766,12 @@ class WP_SQLite_Translator {
 						$data_length = min( $matches[2], $key_length_limit ); // "255"
 					}
 
-					// Set the data length to the varchar and text key length
-					if ( 'text' === $data_type || str_starts_with( $data_type, 'varchar' ) ) {
+					// Set the column length for binary, text and varchar data types (including variations)
+					if (
+						str_ends_with( $data_type, 'binary' ) ||
+						str_ends_with( $data_type, 'text' ) ||
+						str_starts_with( $data_type, 'varchar' )
+					) {
 						return sprintf( '`%s`(%s)', $column['name'], $data_length );
 					}
 					return sprintf( '`%s`', $column['name'] );
