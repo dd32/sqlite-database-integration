@@ -484,6 +484,16 @@ class WP_SQLite_Information_Schema_Builder {
 				);
 				continue;
 			}
+
+			// DROP
+			if ( WP_MySQL_Lexer::DROP_SYMBOL === $first_token->id ) {
+				// DROP [COLUMN]
+				$column_ref = $action->get_child_node( 'columnInternalRef' );
+				if ( null !== $column_ref ) {
+					$name = $this->get_value( $column_ref );
+					$this->record_drop_column( $table_name, $name );
+				}
+			}
 		}
 	}
 
@@ -552,6 +562,41 @@ class WP_SQLite_Information_Schema_Builder {
 		WP_Parser_Node $node
 	): void {
 		$this->record_change_column( $table_name, $column_name, $column_name, $node );
+	}
+
+	private function record_drop_column( $table_name, $column_name ): void {
+		$this->delete_values(
+			'_mysql_information_schema_columns',
+			array(
+				'table_name'  => $table_name,
+				'column_name' => $column_name,
+			)
+		);
+
+		/**
+		 * From MySQL documentation:
+		 *
+		 *   If columns are dropped from a table, the columns are also removed
+		 *   from any index of which they are a part. If all columns that make up
+		 *   an index are dropped, the index is dropped as well.
+		 *
+		 * This means we need to remove the records from the STATISTICS table,
+		 * renumber the SEQ_IN_INDEX values, and resync the column key info.
+		 *
+		 * See:
+		 *   - https://dev.mysql.com/doc/refman/8.4/en/alter-table.html
+		 */
+		$this->delete_values(
+			'_mysql_information_schema_statistics',
+			array(
+				'table_name'  => $table_name,
+				'column_name' => $column_name,
+			)
+		);
+
+		// @TODO: Renumber SEQ_IN_INDEX values.
+
+		$this->sync_column_key_info( $table_name );
 	}
 
 	private function record_add_constraint( string $table_name, WP_Parser_Node $node ): void {
@@ -1413,6 +1458,21 @@ class WP_SQLite_Information_Schema_Builder {
 				WHERE ' . implode( ' AND ', $where_clause ) . '
 			',
 			array_merge( array_values( $data ), array_values( $where ) )
+		);
+	}
+
+	private function delete_values( string $table_name, array $where ): void {
+		$where_clause = array();
+		foreach ( $where as $column => $value ) {
+			$where_clause[] = $column . ' = ?';
+		}
+
+		$this->query(
+			'
+				DELETE FROM ' . $table_name . '
+				WHERE ' . implode( ' AND ', $where_clause ) . '
+			',
+			array_values( $where )
 		);
 	}
 
