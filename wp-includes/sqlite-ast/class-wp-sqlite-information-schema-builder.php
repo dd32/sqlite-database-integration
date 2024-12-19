@@ -423,6 +423,54 @@ class WP_SQLite_Information_Schema_Builder {
 		}
 	}
 
+	public function record_alter_table( WP_Parser_Node $node ): void {
+		$table_name = $this->get_value( $node->get_descendant_node( 'tableRef' ) );
+		$actions    = $node->get_descendant_nodes( 'alterListItem' );
+
+		foreach ( $actions as $action ) {
+			$first_token = $action->get_child_token();
+
+			// ADD
+			if ( WP_MySQL_Lexer::ADD_SYMBOL === $first_token->id ) {
+				// ADD [COLUMN] (...[, ...])
+				$column_definitions = $action->get_descendant_nodes( 'columnDefinition' );
+				if ( count( $column_definitions ) > 0 ) {
+					foreach ( $column_definitions as $column_definition ) {
+						$name = $this->get_value( $column_definition->get_child_node( 'identifier' ) );
+						$this->record_add_column( $table_name, $name, $column_definition );
+					}
+					continue;
+				}
+
+				// ADD [COLUMN] ...
+				$field_definition = $action->get_descendant_node( 'fieldDefinition' );
+				if ( null !== $field_definition ) {
+					$name = $this->get_value( $action->get_child_node( 'identifier' ) );
+					$this->record_add_column( $table_name, $name, $field_definition );
+					// @TODO: Handle FIRST/AFTER.
+					continue;
+				}
+
+				throw new \Exception( sprintf( 'Unsupported ALTER TABLE ADD action: %s', $first_token->value ) );
+			}
+		}
+	}
+
+	private function record_add_column( string $table_name, string $column_name, WP_Parser_Node $node ): void {
+		$position = $this->query(
+			'SELECT MAX(ordinal_position) FROM _mysql_information_schema_columns WHERE table_name = ?',
+			array( $table_name )
+		)->fetchColumn();
+
+		$column_data = $this->extract_column_data( $table_name, $column_name, $node, (int) $position + 1 );
+		$this->insert_values( '_mysql_information_schema_columns', $column_data );
+
+		$column_constraint_data = $this->extract_column_constraint_data( $table_name, $column_name, $node, true );
+		if ( null !== $column_constraint_data ) {
+			$this->insert_values( '_mysql_information_schema_statistics', $column_constraint_data );
+		}
+	}
+
 	private function record_add_constraint( string $table_name, WP_Parser_Node $node ): void {
 		// Get first constraint keyword.
 		$children = $node->get_children();
@@ -1261,6 +1309,27 @@ class WP_SQLite_Information_Schema_Builder {
 				VALUES (' . implode( ', ', array_fill( 0, count( $data ), '?' ) ) . ')
 			',
 			array_values( $data )
+		);
+	}
+
+	private function update_values( string $table_name, array $data, array $where ): void {
+		$set = array();
+		foreach ( $data as $column => $value ) {
+			$set[] = $column . ' = ?';
+		}
+
+		$where_clause = array();
+		foreach ( $where as $column => $value ) {
+			$where_clause[] = $column . ' = ?';
+		}
+
+		$this->query(
+			'
+				UPDATE ' . $table_name . '
+				SET ' . implode( ', ', $set ) . '
+				WHERE ' . implode( ' AND ', $where_clause ) . '
+			',
+			array_merge( array_values( $data ), array_values( $where ) )
 		);
 	}
 
