@@ -913,6 +913,10 @@ class WP_SQLite_Driver {
 				 */
 				$this->results = 0;
 				break;
+			case 'showStatement':
+				$this->query_type = 'SHOW';
+				$this->execute_show_statement( $ast );
+				break;
 			default:
 				throw new Exception( sprintf( 'Unsupported statement type: "%s"', $ast->rule_name ) );
 		}
@@ -1125,6 +1129,38 @@ class WP_SQLite_Driver {
 		 *
 		 *    @TODO: Address these nuances.
 		 */
+	}
+
+	private function execute_show_statement( WP_Parser_Node $node ): void {
+		$tokens   = $node->get_child_tokens();
+		$keyword1 = $tokens[1];
+		$keyword2 = $tokens[2] ?? null;
+
+		switch ( $keyword1->id ) {
+			case WP_MySQL_Lexer::CREATE_SYMBOL:
+				if ( WP_MySQL_Lexer::TABLE_SYMBOL === $keyword2->id ) {
+					$table_name = $this->unquote_sqlite_identifier(
+						$this->translate( $node->get_child_node( 'tableRef' ) )
+					);
+
+					$sql = $this->get_mysql_create_table_statement( $table_name );
+					if ( null === $sql ) {
+						$this->set_results_from_fetched_data( array() );
+					} else {
+						$this->set_results_from_fetched_data(
+							array(
+								(object) array(
+									'Create Table' => $sql,
+								),
+							)
+						);
+					}
+					return;
+				}
+				// Fall through to default.
+			default:
+				// @TODO
+		}
 	}
 
 	private function translate( $ast ) {
@@ -1376,6 +1412,120 @@ class WP_SQLite_Driver {
 		$sql .= implode( ",\n", $rows );
 		$sql .= "\n)";
 		return array_merge( array( $sql ), $create_index_sqls );
+	}
+
+	private function get_mysql_create_table_statement( string $table_name ): ?string {
+		// 1. Get table info.
+		$table_info = $this->execute_sqlite_query(
+			'
+				SELECT *
+				FROM _mysql_information_schema_tables
+				WHERE table_type = "BASE TABLE"
+				AND table_schema = ?
+				AND table_name = ?
+			',
+			array( $this->db_name, $table_name )
+		)->fetch( PDO::FETCH_ASSOC );
+
+		if ( false === $table_info ) {
+			return null;
+		}
+
+		// 2. Get column info.
+		$column_info = $this->execute_sqlite_query(
+			'SELECT * FROM _mysql_information_schema_columns WHERE table_schema = ? AND table_name = ?',
+			array( $this->db_name, $table_name )
+		)->fetchAll( PDO::FETCH_ASSOC );
+
+		// 3. Get index info, grouped by index name.
+		$constraint_info = $this->execute_sqlite_query(
+			'SELECT * FROM _mysql_information_schema_statistics WHERE table_schema = ? AND table_name = ?',
+			array( $this->db_name, $table_name )
+		)->fetchAll( PDO::FETCH_ASSOC );
+
+		$grouped_constraints = array();
+		foreach ( $constraint_info as $constraint ) {
+			$name                                 = $constraint['INDEX_NAME'];
+			$seq                                  = $constraint['SEQ_IN_INDEX'];
+			$grouped_constraints[ $name ][ $seq ] = $constraint;
+		}
+
+		// 4. Generate CREATE TABLE statement columns.
+		$rows = array();
+		foreach ( $column_info as $column ) {
+			$sql = '  ';
+			// @TODO: Proper identifier escaping.
+			$sql .= sprintf( '`%s`', str_replace( '`', '``', $column['COLUMN_NAME'] ) );
+
+			$sql .= ' ' . $column['COLUMN_TYPE'];
+			if ( 'NO' === $column['IS_NULLABLE'] ) {
+				$sql .= ' NOT NULL';
+			}
+			if ( 'auto_increment' === $column['EXTRA'] ) {
+				$sql .= ' AUTO_INCREMENT';
+			}
+			if ( null !== $column['COLUMN_DEFAULT'] ) {
+				// @TODO: Correctly quote based on the data type.
+				$sql .= ' DEFAULT ' . $this->pdo->quote( $column['COLUMN_DEFAULT'] );
+			}
+			$rows[] = $sql;
+		}
+
+		// 4. Generate CREATE TABLE statement constraints, collect indexes.
+		foreach ( $grouped_constraints as $constraint ) {
+			ksort( $constraint );
+			$info = $constraint[1];
+
+			if ( 'PRIMARY' === $info['INDEX_NAME'] ) {
+				$sql    = '  PRIMARY KEY (';
+				$sql   .= implode(
+					', ',
+					array_map(
+						function ( $column ) {
+							// @TODO: Proper identifier escaping.
+							return sprintf( '`%s`', str_replace( '`', '``', $column['COLUMN_NAME'] ) );
+						},
+						$constraint
+					)
+				);
+				$sql   .= ')';
+				$rows[] = $sql;
+			} else {
+				$is_unique = '0' === $info['NON_UNIQUE'];
+
+				$sql = sprintf( '  %sKEY', $is_unique ? 'UNIQUE ' : '' );
+				// @TODO: Proper identifier escaping.
+				$sql .= sprintf( ' `%s`', str_replace( '`', '``', $info['INDEX_NAME'] ) );
+				$sql .= ' (';
+				$sql .= implode(
+					', ',
+					array_map(
+						function ( $column ) {
+							// @TODO: Proper identifier escaping.
+							return sprintf( '`%s`', str_replace( '`', '``', $column['COLUMN_NAME'] ) );
+						},
+						$constraint
+					)
+				);
+				$sql .= ')';
+
+				$rows[] = $sql;
+			}
+		}
+
+		// 5. Compose the CREATE TABLE statement.
+		// @TODO: Proper identifier escaping.
+		$sql  = sprintf( 'CREATE TABLE `%s` (%s', str_replace( '`', '``', $table_name ), "\n" );
+		$sql .= implode( ",\n", $rows );
+		$sql .= "\n)";
+
+		$sql .= sprintf( ' ENGINE=%s', $table_info['ENGINE'] );
+
+		$collation = $table_info['TABLE_COLLATION'];
+		$charset   = substr( $collation, 0, strpos( $collation, '_' ) );
+		$sql      .= sprintf( ' DEFAULT CHARSET=%s', $charset );
+		$sql      .= sprintf( ' COLLATE=%s', $collation );
+		return $sql;
 	}
 
 	private function unquote_sqlite_identifier( string $quoted_identifier ): string {

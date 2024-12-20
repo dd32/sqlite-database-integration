@@ -288,13 +288,13 @@ class WP_SQLite_Driver_Tests extends TestCase {
 		# TODO: Should we fix mismatch with original `option_value` text NOT NULL,` without default?
 		$this->assertEquals(
 			"CREATE TABLE `_tmp_table` (
-	`ID` bigint NOT NULL AUTO_INCREMENT,
-	`option_name` varchar(255) DEFAULT '',
-	`option_value` text NOT NULL DEFAULT '',
-	PRIMARY KEY (`ID`),
-	KEY `composite` (`option_name`, `option_value`),
-	UNIQUE KEY `option_name` (`option_name`)
-);",
+  `ID` bigint NOT NULL AUTO_INCREMENT,
+  `option_name` varchar(255) DEFAULT '',
+  `option_value` text NOT NULL,
+  PRIMARY KEY (`ID`),
+  UNIQUE KEY `option_name` (`option_name`),
+  KEY `composite` (`option_name`, `option_value`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
 			$results[0]->{'Create Table'}
 		);
 	}
@@ -317,13 +317,13 @@ class WP_SQLite_Driver_Tests extends TestCase {
 		# TODO: Should we fix mismatch with original `option_value` text NOT NULL,` without default?
 		$this->assertEquals(
 			"CREATE TABLE `_tmp_table` (
-	`ID` bigint NOT NULL AUTO_INCREMENT,
-	`option_name` varchar(255) DEFAULT '',
-	`option_value` text NOT NULL DEFAULT '',
-	PRIMARY KEY (`ID`),
-	KEY `composite` (`option_name`, `option_value`),
-	UNIQUE KEY `option_name` (`option_name`)
-);",
+  `ID` bigint NOT NULL AUTO_INCREMENT,
+  `option_name` varchar(255) DEFAULT '',
+  `option_value` text NOT NULL,
+  PRIMARY KEY (`ID`),
+  UNIQUE KEY `option_name` (`option_name`),
+  KEY `composite` (`option_name`, `option_value`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
 			$results[0]->{'Create Table'}
 		);
 	}
@@ -341,8 +341,8 @@ class WP_SQLite_Driver_Tests extends TestCase {
 		$results = $this->engine->get_query_results();
 		$this->assertEquals(
 			'CREATE TABLE `_tmp_table` (
-	`ID` bigint NOT NULL DEFAULT 0
-);',
+  `ID` bigint NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci',
 			$results[0]->{'Create Table'}
 		);
 	}
@@ -370,12 +370,12 @@ class WP_SQLite_Driver_Tests extends TestCase {
 		$results = $this->engine->get_query_results();
 		$this->assertEquals(
 			'CREATE TABLE `_tmp_table` (
-	`ID` bigint NOT NULL AUTO_INCREMENT,
-	`option_name` smallint NOT NULL DEFAULT 14,
-	`option_value` text NOT NULL DEFAULT \'\',
-	PRIMARY KEY (`ID`),
-	KEY `option_name` (`option_name`)
-);',
+  `ID` bigint NOT NULL AUTO_INCREMENT,
+  `option_name` smallint NOT NULL DEFAULT \'14\',
+  `option_value` text NOT NULL,
+  PRIMARY KEY (`ID`),
+  KEY `option_name` (`option_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci',
 			$results[0]->{'Create Table'}
 		);
 	}
@@ -419,13 +419,13 @@ class WP_SQLite_Driver_Tests extends TestCase {
 		$results = $this->engine->get_query_results();
 		$this->assertEquals(
 			'CREATE TABLE `_tmp__table` (
-	`ID` bigint NOT NULL AUTO_INCREMENT,
-	`option_name` varchar(255) DEFAULT \'\',
-	`option_value` text NOT NULL DEFAULT \'\',
-	PRIMARY KEY (`ID`),
-	KEY `double__underscores` (`option_name`, `ID`),
-	KEY `option_name` (`option_name`)
-);',
+  `ID` bigint NOT NULL AUTO_INCREMENT,
+  `option_name` varchar(255) DEFAULT \'\',
+  `option_value` text NOT NULL,
+  PRIMARY KEY (`ID`),
+  KEY `option_name` (`option_name`),
+  KEY `double__underscores` (`option_name`, `ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci',
 			$results[0]->{'Create Table'}
 		);
 	}
@@ -446,11 +446,11 @@ class WP_SQLite_Driver_Tests extends TestCase {
 		$results = $this->engine->get_query_results();
 		$this->assertEquals(
 			'CREATE TABLE `_tmp_table` (
-	`ID_A` bigint NOT NULL DEFAULT 0,
-	`ID_B` bigint NOT NULL DEFAULT 0,
-	`ID_C` bigint NOT NULL DEFAULT 0,
-	PRIMARY KEY (`ID_B`, `ID_A`, `ID_C`)
-);',
+  `ID_A` bigint NOT NULL,
+  `ID_B` bigint NOT NULL,
+  `ID_C` bigint NOT NULL,
+  PRIMARY KEY (`ID_B`, `ID_A`, `ID_C`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci',
 			$results[0]->{'Create Table'}
 		);
 	}
@@ -481,11 +481,11 @@ class WP_SQLite_Driver_Tests extends TestCase {
 		$results = $this->engine->get_query_results();
 		$this->assertEquals(
 			'CREATE TABLE `_tmp__table` (
-	`ID` bigint NOT NULL AUTO_INCREMENT,
-	`default_empty_string` varchar(255) DEFAULT \'\',
-	`null_no_default` varchar(255),
-	PRIMARY KEY (`ID`)
-);',
+  `ID` bigint NOT NULL AUTO_INCREMENT,
+  `default_empty_string` varchar(255) DEFAULT \'\',
+  `null_no_default` varchar(255),
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci',
 			$results[0]->{'Create Table'}
 		);
 	}
