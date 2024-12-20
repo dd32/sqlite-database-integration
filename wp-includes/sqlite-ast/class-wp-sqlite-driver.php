@@ -1166,6 +1166,15 @@ class WP_SQLite_Driver {
 				);
 				$this->execute_show_index_statement( $table_name );
 				break;
+			case WP_MySQL_Lexer::GRANTS_SYMBOL:
+				$this->set_results_from_fetched_data(
+					array(
+						(object) array(
+							'Grants for root@localhost' => 'GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, SHUTDOWN, PROCESS, FILE, REFERENCES, INDEX, ALTER, SHOW DATABASES, SUPER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER, CREATE TABLESPACE, CREATE ROLE, DROP ROLE ON *.* TO `root`@`localhost` WITH GRANT OPTION',
+						),
+					)
+				);
+				return;
 			default:
 				// @TODO
 		}
