@@ -1158,9 +1158,46 @@ class WP_SQLite_Driver {
 					return;
 				}
 				// Fall through to default.
+			case WP_MySQL_Lexer::INDEX_SYMBOL:
+			case WP_MySQL_Lexer::INDEXES_SYMBOL:
+			case WP_MySQL_Lexer::KEYS_SYMBOL:
+				$table_name = $this->unquote_sqlite_identifier(
+					$this->translate( $node->get_child_node( 'tableRef' ) )
+				);
+				$this->execute_show_index_statement( $table_name );
+				break;
 			default:
 				// @TODO
 		}
+	}
+
+	private function execute_show_index_statement( string $table_name ): void {
+		$index_info = $this->execute_sqlite_query(
+			'
+				SELECT
+					TABLE_NAME AS `Table`,
+					NON_UNIQUE AS `Non_unique`,
+					INDEX_NAME AS `Key_name`,
+					SEQ_IN_INDEX AS `Seq_in_index`,
+					COLUMN_NAME AS `Column_name`,
+					COLLATION AS `Collation`,
+					CARDINALITY AS `Cardinality`,
+					SUB_PART AS `Sub_part`,
+					PACKED AS `Packed`,
+					NULLABLE AS `Null`,
+					INDEX_TYPE AS `Index_type`,
+					COMMENT AS `Comment`,
+					INDEX_COMMENT AS `Index_comment`,
+					IS_VISIBLE AS `Visible`,
+					EXPRESSION AS `Expression`
+				FROM _mysql_information_schema_statistics
+				WHERE table_schema = ?
+				AND table_name = ?
+			',
+			array( $this->db_name, $table_name )
+		)->fetchAll( PDO::FETCH_OBJ );
+
+		$this->set_results_from_fetched_data( $index_info );
 	}
 
 	private function translate( $ast ) {
