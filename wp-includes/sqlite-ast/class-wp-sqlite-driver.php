@@ -995,8 +995,115 @@ class WP_SQLite_Driver {
 	}
 
 	private function execute_alter_table_statement( WP_Parser_Node $node ): void {
-		$table_name = $this->translate( $node->get_descendant_node( 'tableRef' ) );
-		$actions    = $node->get_descendant_nodes( 'alterListItem' );
+		$table_name = $this->unquote_sqlite_identifier(
+			$this->translate( $node->get_descendant_node( 'tableRef' ) )
+		);
+
+		// Save all column names from the original table.
+		$column_names = $this->execute_sqlite_query(
+			'SELECT COLUMN_NAME FROM _mysql_information_schema_columns WHERE table_schema = ? AND table_name = ?',
+			array( $this->db_name, $table_name )
+		)->fetchAll( PDO::FETCH_COLUMN );
+
+		// Track column renames and removals.
+		$column_map = array_combine( $column_names, $column_names );
+		foreach ( $node->get_descendant_nodes( 'alterListItem' ) as $action ) {
+			$first_token = $action->get_child_token();
+
+			if ( WP_MySQL_Lexer::DROP_SYMBOL === $first_token->id ) {
+				$name = $this->translate( $action->get_child_node( 'columnInternalRef' ) );
+				if ( null !== $name ) {
+					$name = $this->unquote_sqlite_identifier( $name );
+					unset( $column_map[ $name ] );
+				}
+			}
+
+			if ( WP_MySQL_Lexer::CHANGE_SYMBOL === $first_token->id ) {
+				$old_name = $this->unquote_sqlite_identifier(
+					$this->translate( $action->get_child_node( 'columnInternalRef' ) )
+				);
+				$new_name = $this->unquote_sqlite_identifier(
+					$this->translate( $action->get_child_node( 'identifier' ) )
+				);
+
+				$column_map[ $old_name ] = $new_name;
+			}
+
+			if ( WP_MySQL_Lexer::RENAME_SYMBOL === $first_token->id ) {
+				$column_ref = $action->get_child_node( 'columnInternalRef' );
+				if ( null !== $column_ref ) {
+					$old_name = $this->unquote_sqlite_identifier(
+						$this->translate( $column_ref )
+					);
+					$new_name = $this->unquote_sqlite_identifier(
+						$this->translate( $action->get_child_node( 'identifier' ) )
+					);
+
+					$column_map[ $old_name ] = $new_name;
+				}
+			}
+		}
+
+		$this->information_schema_builder->record_alter_table( $node );
+
+		/*
+		 * See:
+		 *   https://www.sqlite.org/lang_altertable.html#making_other_kinds_of_table_schema_changes
+		 */
+
+		// 1. If foreign key constraints are enabled, disable them.
+		// @TODO
+
+		// 2. Create a new table with the new schema.
+		$tmp_table_name     = "_tmp__{$table_name}_" . uniqid();
+		$queries            = $this->get_sqlite_create_table_statement( $table_name, $tmp_table_name );
+		$create_table_query = $queries[0];
+		$constraint_queries = array_slice( $queries, 1 );
+		$this->execute_sqlite_query( $create_table_query );
+
+		// 3. Copy data from the original table to the new table.
+		$this->execute_sqlite_query(
+			sprintf(
+				'INSERT INTO "%s" (%s) SELECT %s FROM "%s"',
+				$tmp_table_name,
+				implode(
+					', ',
+					array_map(
+						function ( $column ) {
+							return '"' . $column . '"';
+						},
+						$column_map
+					)
+				),
+				implode(
+					', ',
+					array_map(
+						function ( $column ) {
+							return '"' . $column . '"';
+						},
+						array_keys( $column_map )
+					)
+				),
+				$table_name
+			)
+		);
+
+		// 4. Drop the original table.
+		$this->execute_sqlite_query( sprintf( 'DROP TABLE "%s"', $table_name ) );
+
+		// 5. Rename the new table to the original table name.
+		$this->execute_sqlite_query( sprintf( 'ALTER TABLE "%s" RENAME TO "%s"', $tmp_table_name, $table_name ) );
+
+		// 6. Reconstruct indexes, triggers, and views.
+		foreach ( $constraint_queries as $query ) {
+			$this->execute_sqlite_query( $query );
+		}
+
+		// @TODO: Triggers and views.
+
+		$this->results      = 1;
+		$this->return_value = $this->results;
+		return;
 
 		/*
 		 * SQLite supports only a small subset of MySQL ALTER TABLE statement.
@@ -1018,42 +1125,6 @@ class WP_SQLite_Driver {
 		 *
 		 *    @TODO: Address these nuances.
 		 */
-		foreach ( $actions as $action ) {
-			$token = $action->get_child_token();
-
-			// ADD column/constraint.
-			if ( WP_MySQL_Lexer::ADD_SYMBOL === $token->id ) {
-				// ADD COLUMN.
-				$field_definition = $action->get_descendant_node( 'fieldDefinition' );
-				if ( null !== $field_definition ) {
-					$field_name = $this->translate( $action->get_child_node( 'identifier' ) );
-					$field      = $this->translate( $field_definition );
-					$this->execute_sqlite_query(
-						sprintf( 'ALTER TABLE %s ADD COLUMN %s %s', $table_name, $field_name, $field )
-					);
-				}
-
-				// ADD CONSTRAINT.
-				$constraint = $action->get_descendant_node( 'tableConstraintDef' );
-				if ( null !== $constraint ) {
-					$constraint_name = $this->translate( $constraint->get_child_node( 'identifier' ) );
-					$constraint      = $this->translate( $constraint );
-					$this->execute_sqlite_query(
-						sprintf( 'ALTER TABLE %s ADD CONSTRAINT %s %s', $table_name, $constraint_name, $constraint )
-					);
-				}
-			} elseif ( WP_MySQL_Lexer::DROP_SYMBOL === $token->id ) {
-				// DROP COLUMN.
-				$field_name = $this->translate( $action->get_child_node( 'columnInternalRef' ) );
-				if ( null !== $field_name ) {
-					$this->execute_sqlite_query(
-						sprintf( 'ALTER TABLE %s DROP COLUMN %s', $table_name, $field_name )
-					);
-				}
-			}
-		}
-
-		$this->set_result_from_affected_rows();
 	}
 
 	private function translate( $ast ) {
