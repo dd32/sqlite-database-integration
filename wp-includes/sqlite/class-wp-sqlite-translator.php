@@ -3725,7 +3725,8 @@ class WP_SQLite_Translator {
 	 * @return array An array of key definitions
 	 */
 	private function get_key_definitions( $table_name, $columns ) {
-		$key_definitions = array();
+		$key_length_limit = 100;
+		$key_definitions  = array();
 
 		$pks = array();
 		foreach ( $columns as $column ) {
@@ -3756,7 +3757,25 @@ class WP_SQLite_Translator {
 			$key_definition[] = sprintf( '`%s`', $index_name );
 
 			$cols = array_map(
-				function ( $column ) {
+				function ( $column ) use ( $table_name, $key_length_limit ) {
+					$data_type   = strtolower( $this->get_cached_mysql_data_type( $table_name, $column['name'] ) );
+					$data_length = $key_length_limit;
+
+					// Extract the length from the data type. Make it lower if needed. Skip 'unsigned' parts and whitespace.
+					if ( 1 === preg_match( '/^(\w+)\s*\(\s*(\d+)\s*\)/', $data_type, $matches ) ) {
+						$data_type   = $matches[1]; // "varchar"
+						$data_length = min( $matches[2], $key_length_limit ); // "255"
+					}
+
+					// Set the data length to the varchar and text key lengths
+					// char, varchar, varbinary, tinyblob, tinytext, blob, text, mediumblob, mediumtext, longblob, longtext
+					if ( str_ends_with( $data_type, 'char' ) ||
+						str_ends_with( $data_type, 'text' ) ||
+						str_ends_with( $data_type, 'blob' ) ||
+						str_starts_with( $data_type, 'var' )
+					) {
+						return sprintf( '`%s`(%s)', $column['name'], $data_length );
+					}
 					return sprintf( '`%s`', $column['name'] );
 				},
 				$key['columns']
