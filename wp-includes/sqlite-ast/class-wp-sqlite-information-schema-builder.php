@@ -492,6 +492,14 @@ class WP_SQLite_Information_Schema_Builder {
 				if ( null !== $column_ref ) {
 					$name = $this->get_value( $column_ref );
 					$this->record_drop_column( $table_name, $name );
+					continue;
+				}
+
+				// DROP INDEX
+				if ( $action->has_child_node( 'keyOrIndex' ) ) {
+					$name = $this->get_value( $action->get_child_node( 'indexRef' ) );
+					$this->record_drop_index( $table_name, $name );
+					continue;
 				}
 			}
 		}
@@ -596,6 +604,17 @@ class WP_SQLite_Information_Schema_Builder {
 
 		// @TODO: Renumber SEQ_IN_INDEX values.
 
+		$this->sync_column_key_info( $table_name );
+	}
+
+	private function record_drop_index( string $table_name, string $index_name ): void {
+		$this->delete_values(
+			'_mysql_information_schema_statistics',
+			array(
+				'table_name' => $table_name,
+				'index_name' => $index_name,
+			)
+		);
 		$this->sync_column_key_info( $table_name );
 	}
 
