@@ -724,14 +724,14 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'bigint(20) unsigned',
 					'Null'    => 'NO',
 					'Key'     => 'PRI',
-					'Default' => '0',
-					'Extra'   => '',
+					'Default' => null,
+					'Extra'   => 'auto_increment',
 				),
 				(object) array(
 					'Field'   => 'user_login',
 					'Type'    => 'varchar(60)',
 					'Null'    => 'NO',
-					'Key'     => '',
+					'Key'     => 'MUL',
 					'Default' => '',
 					'Extra'   => '',
 				),
@@ -747,7 +747,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Field'   => 'user_nicename',
 					'Type'    => 'varchar(50)',
 					'Null'    => 'NO',
-					'Key'     => '',
+					'Key'     => 'MUL',
 					'Default' => '',
 					'Extra'   => '',
 				),
@@ -755,7 +755,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Field'   => 'user_email',
 					'Type'    => 'varchar(100)',
 					'Null'    => 'NO',
-					'Key'     => '',
+					'Key'     => 'MUL',
 					'Default' => '',
 					'Extra'   => '',
 				),
@@ -848,8 +848,8 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'bigint(20) unsigned',
 					'Null'    => 'NO',
 					'Key'     => 'PRI',
-					'Default' => '0',
-					'Extra'   => '',
+					'Default' => null,
+					'Extra'   => 'auto_increment',
 				),
 				(object) array(
 					'Field'   => 'decimal_column',
@@ -1052,7 +1052,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'int(11)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => '0',
+					'Default' => null,
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1061,7 +1061,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Null'    => 'YES',
 					'Key'     => '',
 					'Default' => null,
-					'Extra'   => '',
+					'Extra'   => 'on update CURRENT_TIMESTAMP',
 				),
 			),
 			$results
@@ -1079,7 +1079,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'int(11)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => '0',
+					'Default' => null,
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1088,7 +1088,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Null'    => 'YES',
 					'Key'     => '',
 					'Default' => null,
-					'Extra'   => '',
+					'Extra'   => 'on update CURRENT_TIMESTAMP',
 				),
 				(object) array(
 					'Field'   => 'updated_at',
@@ -1096,7 +1096,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Null'    => 'YES',
 					'Key'     => '',
 					'Default' => null,
-					'Extra'   => '',
+					'Extra'   => 'on update CURRENT_TIMESTAMP',
 				),
 			),
 			$results
@@ -1221,7 +1221,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'int(11)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => '0',
+					'Default' => null,
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1254,7 +1254,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'int(11)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => '0',
+					'Default' => null,
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1263,7 +1263,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Null'    => 'YES',
 					'Key'     => '',
 					'Default' => null,
-					'Extra'   => '',
+					'Extra'   => 'on update CURRENT_TIMESTAMP',
 				),
 			),
 			$results
@@ -1286,7 +1286,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'int(11)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => '0',
+					'Default' => null,
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1328,7 +1328,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'int(11)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => '0',
+					'Default' => null,
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1336,7 +1336,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'varchar(20)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => null,
+					'Default' => '',
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1363,7 +1363,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'int(11)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => '0',
+					'Default' => null,
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1457,7 +1457,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'varchar(20)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => null,
+					'Default' => '',
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1503,7 +1503,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'int(11)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => '0',
+					'Default' => null,
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1549,7 +1549,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Type'    => 'int(11)',
 					'Null'    => 'NO',
 					'Key'     => '',
-					'Default' => '0',
+					'Default' => null,
 					'Extra'   => '',
 				),
 				(object) array(
@@ -1600,7 +1600,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Table'         => '_tmp_table',
 					'Non_unique'    => '1',
 					'Key_name'      => 'name',
-					'Seq_in_index'  => '0',
+					'Seq_in_index'  => '1',
 					'Column_name'   => 'name',
 					'Collation'     => 'A',
 					'Cardinality'   => '0',
@@ -1610,6 +1610,8 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Index_type'    => 'BTREE',
 					'Comment'       => '',
 					'Index_comment' => '',
+					'Visible'       => 'YES',
+					'Expression'    => null,
 				),
 			),
 			$results
@@ -1635,16 +1637,18 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Table'         => '_tmp_table',
 					'Non_unique'    => '0',
 					'Key_name'      => 'name',
-					'Seq_in_index'  => '0',
+					'Seq_in_index'  => '1',
 					'Column_name'   => 'name',
 					'Collation'     => 'A',
 					'Cardinality'   => '0',
-					'Sub_part'      => null,
+					'Sub_part'      => '20',
 					'Packed'        => null,
 					'Null'          => '',
 					'Index_type'    => 'BTREE',
 					'Comment'       => '',
 					'Index_comment' => '',
+					'Visible'       => 'YES',
+					'Expression'    => null,
 				),
 			),
 			$results
@@ -1670,9 +1674,9 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Table'         => '_tmp_table',
 					'Non_unique'    => '1',
 					'Key_name'      => 'name',
-					'Seq_in_index'  => '0',
+					'Seq_in_index'  => '1',
 					'Column_name'   => 'name',
-					'Collation'     => 'A',
+					'Collation'     => null,
 					'Cardinality'   => '0',
 					'Sub_part'      => null,
 					'Packed'        => null,
@@ -1680,6 +1684,8 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Index_type'    => 'FULLTEXT',
 					'Comment'       => '',
 					'Index_comment' => '',
+					'Visible'       => 'YES',
+					'Expression'    => null,
 				),
 			),
 			$results
@@ -2167,15 +2173,14 @@ class WP_SQLite_Driver_Tests extends TestCase {
 		$fields = $this->engine->get_query_results();
 
 		$this->assertEquals(
-			$fields,
 			array(
 				(object) array(
 					'Field'   => 'ID',
-					'Type'    => 'integer',
+					'Type'    => 'int',
 					'Null'    => 'NO',
 					'Key'     => 'PRI',
-					'Default' => '0',
-					'Extra'   => '',
+					'Default' => null,
+					'Extra'   => 'auto_increment',
 				),
 				(object) array(
 					'Field'   => 'option_name',
@@ -2193,7 +2198,8 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Default' => '',
 					'Extra'   => '',
 				),
-			)
+			),
+			$fields
 		);
 	}
 
@@ -2426,7 +2432,7 @@ class WP_SQLite_Driver_Tests extends TestCase {
 					'Field'   => 'term_name',
 					'Type'    => 'varchar(11)',
 					'Null'    => 'NO',
-					'Key'     => '',
+					'Key'     => 'MUL',
 					'Default' => '0',
 					'Extra'   => '',
 				),

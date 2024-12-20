@@ -917,6 +917,23 @@ class WP_SQLite_Driver {
 				$this->query_type = 'SHOW';
 				$this->execute_show_statement( $ast );
 				break;
+			case 'utilityStatement':
+				$this->query_type = 'DESCRIBE';
+				$subtree          = $ast->get_child_node();
+				switch ( $subtree->rule_name ) {
+					case 'describeStatement':
+						$this->execute_describe_statement( $subtree );
+						break;
+					default:
+						throw new Exception(
+							sprintf(
+								'Unsupported statement type: "%s" > "%s"',
+								$ast->rule_name,
+								$subtree->rule_name
+							)
+						);
+				}
+				break;
 			default:
 				throw new Exception( sprintf( 'Unsupported statement type: "%s"', $ast->rule_name ) );
 		}
@@ -1207,6 +1224,30 @@ class WP_SQLite_Driver {
 		)->fetchAll( PDO::FETCH_OBJ );
 
 		$this->set_results_from_fetched_data( $index_info );
+	}
+
+	private function execute_describe_statement( WP_Parser_Node $node ): void {
+		$table_name = $this->unquote_sqlite_identifier(
+			$this->translate( $node->get_child_node( 'tableRef' ) )
+		);
+
+		$column_info = $this->execute_sqlite_query(
+			'
+				SELECT
+					column_name AS `Field`,
+					column_type AS `Type`,
+					is_nullable AS `Null`,
+					column_key AS `Key`,
+					column_default AS `Default`,
+					extra AS Extra
+				FROM _mysql_information_schema_columns
+				WHERE table_schema = ?
+				AND table_name = ?
+			',
+			array( $this->db_name, $table_name )
+		)->fetchAll( PDO::FETCH_OBJ );
+
+		$this->set_results_from_fetched_data( $column_info );
 	}
 
 	private function translate( $ast ) {
