@@ -21,6 +21,11 @@ class WP_SQLite_Driver {
 	const SQLITE_BUSY   = 5;
 	const SQLITE_LOCKED = 6;
 
+	/**
+	 * A map of MySQL tokens to SQLite data types.
+	 *
+	 * This is used to translate a MySQL data type to an SQLite data type.
+	 */
 	const DATA_TYPE_MAP = array(
 		// Numeric data types:
 		WP_MySQL_Lexer::BIT_SYMBOL                => 'INTEGER',
@@ -78,6 +83,72 @@ class WP_SQLite_Driver {
 		WP_MySQL_Lexer::GEOMETRYCOLLECTION_SYMBOL => 'TEXT',
 
 		// SERIAL, SET, and JSON types are handled in the translation process.
+	);
+
+	/**
+	 * A map of normalized MySQL data types to SQLite data types.
+	 *
+	 * This is used to generate SQLite CREATE TABLE statements from the MySQL
+	 * INFORMATION_SCHEMA tables. They keys are MySQL data types normalized
+	 * as they appear in the INFORMATION_SCHEMA. Values are SQLite data types.
+	 */
+	const DATA_TYPE_STRING_MAP = array(
+		// Numeric data types:
+		'bit'                => 'INTEGER',
+		'bool'               => 'INTEGER',
+		'boolean'            => 'INTEGER',
+		'tinyint'            => 'INTEGER',
+		'smallint'           => 'INTEGER',
+		'mediumint'          => 'INTEGER',
+		'int'                => 'INTEGER',
+		'integer'            => 'INTEGER',
+		'bigint'             => 'INTEGER',
+		'float'              => 'REAL',
+		'double'             => 'REAL',
+		'real'               => 'REAL',
+		'decimal'            => 'REAL',
+		'dec'                => 'REAL',
+		'fixed'              => 'REAL',
+		'numeric'            => 'REAL',
+
+		// String data types:
+		'char'               => 'TEXT',
+		'varchar'            => 'TEXT',
+		'nchar'              => 'TEXT',
+		'nvarchar'           => 'TEXT',
+		'tinytext'           => 'TEXT',
+		'text'               => 'TEXT',
+		'mediumtext'         => 'TEXT',
+		'longtext'           => 'TEXT',
+		'enum'               => 'TEXT',
+		'set'                => 'TEXT',
+		'json'               => 'TEXT',
+
+		// Date and time data types:
+		'date'               => 'TEXT',
+		'time'               => 'TEXT',
+		'datetime'           => 'TEXT',
+		'timestamp'          => 'TEXT',
+		'year'               => 'TEXT',
+
+		// Binary data types:
+		'binary'             => 'INTEGER',
+		'varbinary'          => 'BLOB',
+		'tinyblob'           => 'BLOB',
+		'blob'               => 'BLOB',
+		'mediumblob'         => 'BLOB',
+		'longblob'           => 'BLOB',
+
+		// Spatial data types:
+		'geometry'           => 'TEXT',
+		'point'              => 'TEXT',
+		'linestring'         => 'TEXT',
+		'polygon'            => 'TEXT',
+		'multipoint'         => 'TEXT',
+		'multilinestring'    => 'TEXT',
+		'multipolygon'       => 'TEXT',
+		'geomcollection'     => 'TEXT',
+		'geometrycollection' => 'TEXT',
 	);
 
 	const DATA_TYPES_CACHE_TABLE = '_mysql_data_types_cache';
@@ -902,86 +973,25 @@ class WP_SQLite_Driver {
 			return;
 		}
 
-		/*
-		 * We need to handle some differences between MySQL and SQLite:
-		 *
-		 * 1. Inline index definitions:
-		 *
-		 *  In MySQL, we can define an index inline with a column definition.
-		 *  In SQLite, we need to define indexes separately, using extra queries.
-		 *
-		 * 2. Column and constraint definition order:
-		 *
-		 *  In MySQL, column and constraint definitions can be arbitrarily mixed.
-		 *  In SQLite, column definitions must come first, followed by constraints.
-		 *
-		 * 2. Auto-increment:
-		 *
-		 *  In MySQL, there can at most one AUTO_INCREMENT column, and it must be
-		 *  a PRIMARY KEY, or the first column in a multi-column KEY.
-		 *
-		 *  In SQLite, there can at most one AUTOINCREMENT column, and it must be
-		 *  a PRIMARY KEY, defined inline on a single column.
-		 *
-		 *  Therefore, the following valid MySQL construct is not supported:
-		 *    CREATE TABLE t ( a INT AUTO_INCREMENT, b INT, PRIMARY KEY (a, b) );
-		 *  @TODO: Support it with a single-column PK and a multi-column UNIQUE KEY.
-		 */
+		$table_name = $this->unquote_sqlite_identifier(
+			$this->translate( $node->get_descendant_node( 'tableName' ) )
+		);
 
-		// Collect column, index, and constraint nodes.
-		$columns                = array();
-		$constraints            = array();
-		$indexes                = array();
-		$has_autoincrement      = false;
-		$primary_key_constraint = null; // Does not include inline PK definition.
+		// Save information to information schema tables.
+		$this->information_schema_builder->record_create_table( $node );
 
-		foreach ( $element_list->get_descendant_nodes( 'columnDefinition' ) as $child ) {
-			if ( null !== $child->get_descendant_token( WP_MySQL_Lexer::AUTO_INCREMENT_SYMBOL ) ) {
-				$has_autoincrement = true;
-			}
-			// @TODO: Collect inline index definitions.
-			$columns[] = $child;
+		// Generate CREATE TABLE statement from the information schema tables.
+		$queries            = $this->get_sqlite_create_table_statement( $table_name );
+		$create_table_query = $queries[0];
+		$constraint_queries = array_slice( $queries, 1 );
+
+		$this->execute_sqlite_query( $create_table_query );
+		$this->results      = $this->last_exec_returned;
+		$this->return_value = $this->results;
+
+		foreach ( $constraint_queries as $query ) {
+			$this->execute_sqlite_query( $query );
 		}
-
-		foreach ( $element_list->get_descendant_nodes( 'tableConstraintDef' ) as $child ) {
-			if ( null !== $child->get_descendant_token( WP_MySQL_Lexer::PRIMARY_SYMBOL ) ) {
-				$primary_key_constraint = $child;
-			} else {
-				$constraints[] = $child;
-			}
-		}
-
-		/*
-		 * If we have a PRIMARY KEY constraint:
-		 *  1. Without auto-increment, we can put it back to the list of constraints.
-		 *  2. With auto-increment, we need to later move it to the column definition.
-		 */
-		if ( null !== $primary_key_constraint ) {
-			if ( ! $has_autoincrement ) {
-				$constraints[] = $primary_key_constraint;
-			} elseif ( count( $primary_key_constraint->get_descendant_nodes( 'keyPart' ) ) > 1 ) {
-				throw $this->not_supported_exception(
-					'Composite primary key with AUTO_INCREMENT'
-				);
-			}
-		}
-
-		$query_parts = array( 'CREATE' );
-		foreach ( $node->get_child_node()->get_children() as $child ) {
-			if ( $child instanceof WP_Parser_Node && 'tableElementList' === $child->rule_name ) {
-				$query_parts[] = $this->translate_sequence( array_merge( $columns, $constraints ), ' , ' );
-			} else {
-				$part = $this->translate( $child );
-				if ( null !== $part ) {
-					$query_parts[] = $part;
-				}
-			}
-		}
-
-		// @TODO: Execute queries for inline index definitions.
-
-		$this->execute_sqlite_query( implode( ' ', $query_parts ) );
-		$this->set_result_from_affected_rows();
 	}
 
 	private function execute_alter_table_statement( WP_Parser_Node $node ): void {
@@ -1116,59 +1126,9 @@ class WP_SQLite_Driver {
 
 				// When we have no value, it's reasonable to use NULL.
 				return 'NULL';
-			case 'fieldDefinition':
-				/*
-				 * In SQLite, there is the a quirk for backward compatibility:
-				 *  1. INTEGER PRIMARY KEY creates an alias of ROWID.
-				 *  2. INT PRIMARY KEY will  not alias of ROWID.
-				 *
-				 * Therefore, we want to:
-				 *  1. Use INTEGER PRIMARY KEY for when we have AUTOINCREMENT.
-				 *  2. Use INT PRIMARY KEY otherwise.
-				 */
-				$has_primary_key   = $ast->get_descendant_token( WP_MySQL_Lexer::KEY_SYMBOL ) !== null;
-				$has_autoincrement = $ast->get_descendant_token( WP_MySQL_Lexer::AUTO_INCREMENT_SYMBOL ) !== null;
-				$children          = $ast->get_children();
-				$data_type_node    = array_shift( $children );
-				$data_type         = $this->translate( $data_type_node );
-				if ( $has_primary_key && 'INTEGER' === $data_type ) {
-					$data_type = $has_autoincrement ? 'INTEGER' : 'INT';
-				}
-
-				$attributes = $this->translate_sequence( $children );
-				$definition = $data_type . ( null === $attributes ? '' : " $attributes" );
-
-				/*
-				 * In SQLite, AUTOINCREMENT must always be preceded by PRIMARY KEY.
-				 * Therefore, we remove both PRIMARY KEY and AUTOINCREMENT from
-				 * column attributes, and append them here in SQLite-friendly way.
-				 */
-				if ( $has_autoincrement ) {
-					return $definition . ' PRIMARY KEY AUTOINCREMENT';
-				} elseif ( $has_primary_key ) {
-					return $definition . ' PRIMARY KEY';
-				}
-				return $definition;
-			case 'columnAttribute':
-			case 'gcolAttribute':
-				/*
-				 * Remove PRIMARY KEY and AUTOINCREMENT from the column attributes.
-				 * They are handled in the "fieldDefinition" node.
-				 */
-				if ( $ast->has_child_token( WP_MySQL_Lexer::KEY_SYMBOL ) ) {
-					return null;
-				}
-				if ( $ast->has_child_token( WP_MySQL_Lexer::AUTO_INCREMENT_SYMBOL ) ) {
-					return null;
-				}
-				return $this->translate_sequence( $ast->get_children() );
-			case 'createTableOptions':
-				return $this->translate_sequence( $ast->get_children(), ', ' );
-			case 'createTableOption':
-				if ( $ast->get_child_token( WP_MySQL_Lexer::ENGINE_SYMBOL ) ) {
-					return null;
-				}
-				return $this->translate_sequence( $ast->get_children() );
+			case 'defaultCollation':
+				// @TODO: Check and save in information schema.
+				return null;
 			case 'duplicateAsQueryExpression':
 				// @TODO: How to handle IGNORE/REPLACE?
 
@@ -1184,6 +1144,8 @@ class WP_SQLite_Driver {
 			case WP_MySQL_Lexer::EOF:
 				return null;
 			case WP_MySQL_Lexer::IDENTIFIER:
+			case WP_MySQL_Lexer::BACK_TICK_QUOTED_ID:
+				// @TODO: Properly unquote (MySQL) and escape (SQLite).
 				return '"' . trim( $token->value, '`"' ) . '"';
 			case WP_MySQL_Lexer::AUTO_INCREMENT_SYMBOL:
 				return 'AUTOINCREMENT';
@@ -1209,6 +1171,150 @@ class WP_SQLite_Driver {
 			return null;
 		}
 		return implode( $separator, $parts );
+	}
+
+	private function get_sqlite_create_table_statement( string $table_name, ?string $new_table_name = null ): array {
+		// 1. Get table info.
+		$table_info = $this->execute_sqlite_query(
+			'
+				SELECT *
+				FROM _mysql_information_schema_tables
+				WHERE table_type = "BASE TABLE"
+				AND table_schema = ?
+				AND table_name = ?
+			',
+			array( $this->db_name, $table_name )
+		)->fetch( PDO::FETCH_ASSOC );
+
+		if ( false === $table_info ) {
+			throw new Exception( 'Table not found in information_schema' );
+		}
+
+		// 2. Get column info.
+		$column_info = $this->execute_sqlite_query(
+			'SELECT * FROM _mysql_information_schema_columns WHERE table_schema = ? AND table_name = ?',
+			array( $this->db_name, $table_name )
+		)->fetchAll( PDO::FETCH_ASSOC );
+
+		// 3. Get index info, grouped by index name.
+		$constraint_info = $this->execute_sqlite_query(
+			'SELECT * FROM _mysql_information_schema_statistics WHERE table_schema = ? AND table_name = ?',
+			array( $this->db_name, $table_name )
+		)->fetchAll( PDO::FETCH_ASSOC );
+
+		$grouped_constraints = array();
+		foreach ( $constraint_info as $constraint ) {
+			$name                                 = $constraint['INDEX_NAME'];
+			$seq                                  = $constraint['SEQ_IN_INDEX'];
+			$grouped_constraints[ $name ][ $seq ] = $constraint;
+		}
+
+		// 4. Generate CREATE TABLE statement columns.
+		$rows              = array();
+		$has_autoincrement = false;
+		foreach ( $column_info as $column ) {
+			$sql  = '  ';
+			$sql .= sprintf( '"%s"', str_replace( '"', '""', $column['COLUMN_NAME'] ) );
+
+			$type = self::DATA_TYPE_STRING_MAP[ $column['DATA_TYPE'] ];
+
+			/*
+			 * In SQLite, there is a PRIMARY KEY quirk for backward compatibility.
+			 * This applies to ROWID tables and single-column primary keys only:
+			 *  1. "INTEGER PRIMARY KEY" creates an alias of ROWID.
+			 *  2. "INT PRIMARY KEY" will not alias of ROWID.
+			 *
+			 * Therefore, we want to:
+			 *  1. Use "INT PRIMARY KEY" when we have a single-column integer
+			 *     PRIMARY KEY without AUTOINCREMENT (to avoid the ROWID alias).
+			 *  2. Use "INTEGER PRIMARY KEY" otherwise.
+			 *
+			 * See:
+			 *   - https://www.sqlite.org/autoinc.html
+			 *   - https://www.sqlite.org/lang_createtable.html
+			 */
+			if (
+				'INTEGER' === $type
+				&& 'PRI' === $column['COLUMN_KEY']
+				&& 'auto_increment' !== $column['EXTRA']
+				&& count( $grouped_constraints['PRIMARY'] ) === 1
+			) {
+				$type = 'INT';
+			}
+
+			$sql .= ' ' . $type;
+			if ( 'NO' === $column['IS_NULLABLE'] ) {
+				$sql .= ' NOT NULL';
+			}
+			if ( 'auto_increment' === $column['EXTRA'] ) {
+				$has_autoincrement = true;
+				$sql              .= ' PRIMARY KEY AUTOINCREMENT';
+			}
+			if ( null !== $column['COLUMN_DEFAULT'] ) {
+				// @TODO: Correctly quote based on the data type.
+				$sql .= ' DEFAULT ' . $this->pdo->quote( $column['COLUMN_DEFAULT'] );
+			}
+			$rows[] = $sql;
+		}
+
+		// 4. Generate CREATE TABLE statement constraints, collect indexes.
+		$create_index_sqls = array();
+		foreach ( $grouped_constraints as $constraint ) {
+			ksort( $constraint );
+			$info = $constraint[1];
+
+			if ( 'PRIMARY' === $info['INDEX_NAME'] ) {
+				if ( $has_autoincrement ) {
+					continue;
+				}
+				$sql    = '  PRIMARY KEY (';
+				$sql   .= implode(
+					', ',
+					array_map(
+						function ( $column ) {
+							return sprintf( '"%s"', str_replace( '"', '""', $column['COLUMN_NAME'] ) );
+						},
+						$constraint
+					)
+				);
+				$sql   .= ')';
+				$rows[] = $sql;
+			} else {
+				$is_unique = '0' === $info['NON_UNIQUE'];
+
+				$sql  = sprintf( 'CREATE %sINDEX', $is_unique ? 'UNIQUE ' : '' );
+				$sql .= sprintf( ' "%s"', $info['INDEX_NAME'] );
+				$sql .= sprintf( ' ON "%s" (', $table_name );
+				$sql .= implode(
+					', ',
+					array_map(
+						function ( $column ) {
+							return sprintf( '"%s"', str_replace( '"', '""', $column['COLUMN_NAME'] ) );
+						},
+						$constraint
+					)
+				);
+				$sql .= ')';
+
+				$create_index_sqls[] = $sql;
+			}
+		}
+
+		// 5. Compose the CREATE TABLE statement.
+		$sql  = sprintf( 'CREATE TABLE "%s" (%s', str_replace( '"', '""', $new_table_name ?? $table_name ), "\n" );
+		$sql .= implode( ",\n", $rows );
+		$sql .= "\n)";
+		return array_merge( array( $sql ), $create_index_sqls );
+	}
+
+	private function unquote_sqlite_identifier( string $quoted_identifier ): string {
+		$first_byte = $quoted_identifier[0] ?? null;
+		if ( '"' === $first_byte ) {
+			$unquoted = substr( $quoted_identifier, 1, -1 );
+		} else {
+			$unquoted = $quoted_identifier;
+		}
+		return str_replace( '""', '"', $unquoted );
 	}
 
 	/**
