@@ -1328,6 +1328,9 @@ class WP_SQLite_Driver {
 
 				// The "AS" keyword is optional in MySQL, but required in SQLite.
 				return 'AS ' . $this->translate( $ast->get_child_node() );
+			case 'indexHint':
+			case 'indexHintList':
+				return null;
 			default:
 				return $this->translate_sequence( $ast->get_children() );
 		}
