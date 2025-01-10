@@ -1313,6 +1313,12 @@ class WP_SQLite_Driver {
 				throw $this->not_supported_exception(
 					sprintf( 'data type: %s', $child->value )
 				);
+			case 'predicateOperations':
+				$token = $ast->get_child_token();
+				if ( WP_MySQL_Lexer::LIKE_SYMBOL === $token->id ) {
+					return $this->translate_like( $ast );
+				}
+				return $this->translate_sequence( $ast->get_children() );
 			case 'systemVariable':
 				// @TODO: Emulate some system variables, or use reasonable defaults.
 				//        See: https://dev.mysql.com/doc/refman/8.4/en/server-system-variable-reference.html
@@ -1346,6 +1352,13 @@ class WP_SQLite_Driver {
 				return '"' . trim( $token->value, '`"' ) . '"';
 			case WP_MySQL_Lexer::AUTO_INCREMENT_SYMBOL:
 				return 'AUTOINCREMENT';
+			case WP_MySQL_Lexer::BINARY_SYMBOL:
+				/*
+				 * There is no "BINARY expr" equivalent in SQLite. We can look for
+				 * the BINARY keyword in particular cases (with REGEXP, LIKE, etc.)
+				 * and then remove it from the translated output here.
+				 */
+				return null;
 			default:
 				return $token->value;
 		}
@@ -1368,6 +1381,39 @@ class WP_SQLite_Driver {
 			return null;
 		}
 		return implode( $separator, $parts );
+	}
+
+	private function translate_like( WP_Parser_Node $node ): string {
+		$tokens    = $node->get_descendant_tokens();
+		$is_binary = isset( $tokens[1] ) && WP_MySQL_Lexer::BINARY_SYMBOL === $tokens[1]->id;
+
+		if ( true === $is_binary ) {
+			$children = $node->get_children();
+			return sprintf(
+				'GLOB _helper_like_to_glob_pattern(%s)',
+				$this->translate( $children[1] )
+			);
+		}
+
+		/*
+		 * @TODO: Implement the ESCAPE '...' clause.
+		 */
+
+		/*
+		 * @TODO: Implement more correct LIKE behavior.
+		 *
+		 * While SQLite supports the LIKE operator, it seems to differ from the
+		 * MySQL behavior in some ways:
+		 *
+		 *  1. In SQLite, LIKE is case-insensitive only for ASCII characters
+		 *     ('a' LIKE 'A' is TRUE but 'æ' LIKE 'Æ' is FALSE)
+		 *  2. In MySQL, LIKE interprets some escape sequences. See the contents
+		 *     of the "_helper_like_to_glob_pattern" function.
+		 *
+		 * We'll probably need to overload the like() function:
+		 *   https://www.sqlite.org/lang_corefunc.html#like
+		 */
+		return $this->translate_sequence( $node->get_children() );
 	}
 
 	private function get_sqlite_create_table_statement( string $table_name, ?string $new_table_name = null ): array {

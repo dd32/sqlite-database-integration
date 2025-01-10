@@ -3033,13 +3033,13 @@ QUERY
 		$this->assertQuery( 'DELETE FROM _options' );
 	}
 
-	public function testTranslateLikeBinaryAndGlob() {
+	public function testTranslateLikeBinary() {
 		// Create a temporary table for testing
 		$this->assertQuery(
-			"CREATE TABLE _tmp_table (
-            ID INTEGER PRIMARY KEY AUTO_INCREMENT NOT NULL,
-            name varchar(20) NOT NULL default ''
-        );"
+			'CREATE TABLE _tmp_table (
+              ID INTEGER PRIMARY KEY AUTO_INCREMENT NOT NULL,
+              name varchar(20)
+       	    )'
 		);
 
 		// Insert data into the table
@@ -3052,70 +3052,111 @@ QUERY
 		$this->assertQuery( "INSERT INTO _tmp_table (name) VALUES ('special%chars');" );
 		$this->assertQuery( "INSERT INTO _tmp_table (name) VALUES ('special_chars');" );
 		$this->assertQuery( "INSERT INTO _tmp_table (name) VALUES ('special\\chars');" );
+		$this->assertQuery( "INSERT INTO _tmp_table (name) VALUES ('aste*risk');" );
+		$this->assertQuery( "INSERT INTO _tmp_table (name) VALUES ('question?mark');" );
 
-		// Test case-sensitive LIKE BINARY
+		// Test exact string
 		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'first'" );
 		$this->assertCount( 1, $result );
 		$this->assertEquals( 'first', $result[0]->name );
 
-		// Test case-sensitive LIKE BINARY with wildcard %
+		// Test exact string with no matches
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'third'" );
+		$this->assertCount( 0, $result );
+
+		// Test mixed case
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'First'" );
+		$this->assertCount( 0, $result );
+
+		// Test % wildcard
 		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'f%'" );
 		$this->assertCount( 1, $result );
 		$this->assertEquals( 'first', $result[0]->name );
 
-		// Test case-sensitive LIKE BINARY with wildcard _
+		// Test % wildcard with no matches
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'x%'" );
+		$this->assertCount( 0, $result );
+
+		// Test "%" character (not a wildcard)
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'special\\%chars'" );
+		$this->assertCount( 1, $result );
+		$this->assertEquals( 'special%chars', $result[0]->name );
+
+		// Test _ wildcard
 		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'f_rst'" );
 		$this->assertCount( 1, $result );
 		$this->assertEquals( 'first', $result[0]->name );
 
-		// Test case-insensitive LIKE
-		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE 'FIRST'" );
-		$this->assertCount( 2, $result ); // Should match both 'first' and 'FIRST'
-
-		// Test mixed case with LIKE BINARY
-		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'First'" );
+		// Test _ wildcard with no matches
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'x_yz'" );
 		$this->assertCount( 0, $result );
 
-		// Test no matches with LIKE BINARY
-		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'third'" );
+		// Test "_" character (not a wildcard)
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'special\\_chars'" );
+		$this->assertCount( 1, $result );
+		$this->assertEquals( 'special_chars', $result[0]->name );
+
+		// Test escaping of "*"
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'aste*risk'" );
+		$this->assertCount( 1, $result );
+		$this->assertEquals( 'aste*risk', $result[0]->name );
+
+		// Test escaping of "*" with no matches
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'f*'" );
 		$this->assertCount( 0, $result );
 
-		// Test GLOB equivalent for case-sensitive matching with wildcard
-		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name GLOB 'f*'" );
+		// Test escaping of "?"
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'question?mark'" );
 		$this->assertCount( 1, $result );
-		$this->assertEquals( 'first', $result[0]->name );
+		$this->assertEquals( 'question?mark', $result[0]->name );
 
-		// Test GLOB with single character wildcard
-		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name GLOB 'f?rst'" );
-		$this->assertCount( 1, $result );
-		$this->assertEquals( 'first', $result[0]->name );
-
-		// Test GLOB with no matches
-		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name GLOB 'S*'" );
+		// Test escaping of "?" with no matches
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'f?rst'" );
 		$this->assertCount( 0, $result );
 
-		// Test GLOB case sensitivity with LIKE and GLOB
-		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name GLOB 'first';" );
-		$this->assertCount( 1, $result ); // Should only match 'first'
+		// Test escaping of character class
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY '[f]irst'" );
+		$this->assertCount( 0, $result );
 
-		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name GLOB 'FIRST';" );
-		$this->assertCount( 1, $result ); // Should only match 'FIRST'
-
-		// Test NULL comparison with LIKE BINARY
-		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'first';" );
-		$this->assertCount( 1, $result );
-		$this->assertEquals( 'first', $result[0]->name );
-
-		$result = $this->assertQuery( 'SELECT * FROM _tmp_table WHERE name LIKE BINARY NULL;' );
-		$this->assertCount( 0, $result );  // NULL comparison should return no results
+		// Test NULL
+		$result = $this->assertQuery( 'SELECT * FROM _tmp_table WHERE name LIKE BINARY NULL' );
+		$this->assertCount( 0, $result );
 
 		// Test pattern with special characters using LIKE BINARY
-		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY '%special%';" );
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY '%special%'" );
 		$this->assertCount( 4, $result );
 		$this->assertEquals( '%special%', $result[0]->name );
 		$this->assertEquals( 'special%chars', $result[1]->name );
 		$this->assertEquals( 'special_chars', $result[2]->name );
-		$this->assertEquals( 'specialchars', $result[3]->name );
+		$this->assertEquals( 'special\chars', $result[3]->name );
+
+		// Test escaping - "\t" is a tab character
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'firs\\t'" );
+		$this->assertCount( 0, $result );
+
+		// Test escaping - "\\t" is "t" (input resolves to "\t", which LIKE resolves to "t")
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'firs\\\\t'" );
+		$this->assertCount( 1, $result );
+		$this->assertEquals( 'first', $result[0]->name );
+
+		// Test escaping - "\%" is a "%" literal
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'special\\%chars'" );
+		$this->assertCount( 1, $result );
+		$this->assertEquals( 'special%chars', $result[0]->name );
+
+		// Test escaping - "\\%" is also a "%" literal
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'special\\\\%chars'" );
+		$this->assertCount( 1, $result );
+		$this->assertEquals( 'special%chars', $result[0]->name );
+
+		// Test escaping - "\\\%" is "\" and a wildcard
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE BINARY 'special\\\\\\%chars'" );
+		$this->assertCount( 1, $result );
+		$this->assertEquals( 'special\\chars', $result[0]->name );
+
+		// Test LIKE without BINARY
+		$result = $this->assertQuery( "SELECT * FROM _tmp_table WHERE name LIKE 'FIRST'" );
+		$this->assertCount( 2, $result ); // Should match both 'first' and 'FIRST'
 	}
 
 	public function testOnConflictReplace() {
