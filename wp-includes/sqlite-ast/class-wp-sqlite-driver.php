@@ -1317,6 +1317,8 @@ class WP_SQLite_Driver {
 				$token = $ast->get_child_token();
 				if ( WP_MySQL_Lexer::LIKE_SYMBOL === $token->id ) {
 					return $this->translate_like( $ast );
+				} elseif ( WP_MySQL_Lexer::REGEXP_SYMBOL === $token->id ) {
+					return $this->translate_regexp_functions( $ast );
 				}
 				return $this->translate_sequence( $ast->get_children() );
 			case 'systemVariable':
@@ -1414,6 +1416,29 @@ class WP_SQLite_Driver {
 		 *   https://www.sqlite.org/lang_corefunc.html#like
 		 */
 		return $this->translate_sequence( $node->get_children() );
+	}
+
+	private function translate_regexp_functions( WP_Parser_Node $node ): string {
+		$tokens    = $node->get_descendant_tokens();
+		$is_binary = isset( $tokens[1] ) && WP_MySQL_Lexer::BINARY_SYMBOL === $tokens[1]->id;
+
+		/*
+		 * If the query says REGEXP BINARY, the comparison is byte-by-byte
+		 * and letter casing matters – lowercase and uppercase letters are
+		 * represented using different byte codes.
+		 *
+		 * The REGEXP function can't be easily made to accept two
+		 * parameters, so we'll have to use a hack to get around this.
+		 *
+		 * If the first character of the pattern is a null byte, we'll
+		 * remove it and make the comparison case-sensitive. This should
+		 * be reasonably safe since PHP does not allow null bytes in
+		 * regular expressions anyway.
+		 */
+		if ( true === $is_binary ) {
+			return 'REGEXP CHAR(0) || ' . $this->translate( $node->get_child_node() );
+		}
+		return 'REGEXP ' . $this->translate( $node->get_child_node() );
 	}
 
 	private function get_sqlite_create_table_statement( string $table_name, ?string $new_table_name = null ): array {
