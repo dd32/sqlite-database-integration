@@ -267,8 +267,8 @@ class WP_SQLite_Translator_Tests extends TestCase {
 				ID BIGINT PRIMARY KEY AUTO_INCREMENT NOT NULL,
 				option_name VARCHAR(255) default '',
 				option_value TEXT NOT NULL,
-				UNIQUE KEY option_name (option_name),
-				KEY composite (option_name, option_value)
+				UNIQUE KEY option_name (option_name(100)),
+				KEY composite (option_name(100), option_value(100))
 			);"
 		);
 
@@ -283,8 +283,49 @@ class WP_SQLite_Translator_Tests extends TestCase {
 	`option_name` varchar(255) DEFAULT '',
 	`option_value` text NOT NULL DEFAULT '',
 	PRIMARY KEY (`ID`),
-	KEY `composite` (`option_name`, `option_value`),
-	UNIQUE KEY `option_name` (`option_name`)
+	KEY `composite` (`option_name`(100), `option_value`(100)),
+	UNIQUE KEY `option_name` (`option_name`(100))
+);",
+			$results[0]->{'Create Table'}
+		);
+	}
+
+	public function testShowCreateTableWithEmptyDatetimeDefault() {
+		$this->assertQuery(
+			"CREATE TABLE _tmp_table (
+				ID BIGINT PRIMARY KEY AUTO_INCREMENT,
+				timestamp1 datetime NOT NULL,
+				timestamp2 date NOT NULL,
+				timestamp3 time NOT NULL,
+				timestamp4 timestamp NOT NULL,
+				timestamp5 year NOT NULL,
+				notempty1 datetime DEFAULT '1999-12-12 12:12:12',
+				notempty2 date DEFAULT '1999-12-12',
+				notempty3 time DEFAULT '12:12:12',
+				notempty4 year DEFAULT '2024',
+				notempty5 timestamp DEFAULT '1734539165',
+			);"
+		);
+
+		$this->assertQuery(
+			'SHOW CREATE TABLE _tmp_table;'
+		);
+		$results = $this->engine->get_query_results();
+
+		$this->assertEquals(
+			"CREATE TABLE `_tmp_table` (
+	`ID` bigint AUTO_INCREMENT,
+	`timestamp1` datetime NOT NULL,
+	`timestamp2` date NOT NULL,
+	`timestamp3` time NOT NULL,
+	`timestamp4` timestamp NOT NULL,
+	`timestamp5` year NOT NULL,
+	`notempty1` datetime DEFAULT '1999-12-12 12:12:12',
+	`notempty2` date DEFAULT '1999-12-12',
+	`notempty3` time DEFAULT '12:12:12',
+	`notempty4` year DEFAULT '2024',
+	`notempty5` timestamp DEFAULT '1734539165',
+	PRIMARY KEY (`ID`)
 );",
 			$results[0]->{'Create Table'}
 		);
@@ -296,8 +337,8 @@ class WP_SQLite_Translator_Tests extends TestCase {
 				ID BIGINT PRIMARY KEY AUTO_INCREMENT NOT NULL,
 				option_name VARCHAR(255) default '',
 				option_value TEXT NOT NULL,
-				UNIQUE KEY option_name (option_name),
-				KEY composite (option_name, option_value)
+				UNIQUE KEY option_name (option_name(100)),
+				KEY composite (option_name, option_value(100))
 			);"
 		);
 
@@ -312,8 +353,8 @@ class WP_SQLite_Translator_Tests extends TestCase {
 	`option_name` varchar(255) DEFAULT '',
 	`option_value` text NOT NULL DEFAULT '',
 	PRIMARY KEY (`ID`),
-	KEY `composite` (`option_name`, `option_value`),
-	UNIQUE KEY `option_name` (`option_name`)
+	KEY `composite` (`option_name`(100), `option_value`(100)),
+	UNIQUE KEY `option_name` (`option_name`(100))
 );",
 			$results[0]->{'Create Table'}
 		);
@@ -377,8 +418,8 @@ class WP_SQLite_Translator_Tests extends TestCase {
 					ID BIGINT PRIMARY KEY AUTO_INCREMENT NOT NULL,
 					option_name VARCHAR(255) default '',
 					option_value TEXT NOT NULL,
-					KEY `option_name` (`option_name`),
-					KEY `double__underscores` (`option_name`, `ID`)
+					KEY `option_name` (`option_name`(100)),
+					KEY `double__underscores` (`option_name`(100), `ID`)
 				);"
 		);
 
@@ -387,8 +428,8 @@ class WP_SQLite_Translator_Tests extends TestCase {
 					ID BIGINT PRIMARY KEY AUTO_INCREMENT NOT NULL,
 					option_name VARCHAR(255) default '',
 					option_value TEXT NOT NULL,
-					KEY `option_name` (`option_name`),
-					KEY `double__underscores` (`option_name`, `ID`)
+					KEY `option_name` (`option_name`(100)),
+					KEY `double__underscores` (`option_name`(100), `ID`)
 				);"
 		);
 	}
@@ -399,8 +440,8 @@ class WP_SQLite_Translator_Tests extends TestCase {
 					ID BIGINT PRIMARY KEY AUTO_INCREMENT NOT NULL,
 					option_name VARCHAR(255) default '',
 					option_value TEXT NOT NULL,
-					KEY `option_name` (`option_name`),
-					KEY `double__underscores` (`option_name`, `ID`)
+					KEY `option_name` (`option_name`(100)),
+					KEY `double__underscores` (`option_name`(100), `ID`)
 				);"
 		);
 
@@ -414,8 +455,43 @@ class WP_SQLite_Translator_Tests extends TestCase {
 	`option_name` varchar(255) DEFAULT \'\',
 	`option_value` text NOT NULL DEFAULT \'\',
 	PRIMARY KEY (`ID`),
-	KEY `double__underscores` (`option_name`, `ID`),
-	KEY `option_name` (`option_name`)
+	KEY `double__underscores` (`option_name`(100), `ID`),
+	KEY `option_name` (`option_name`(100))
+);',
+			$results[0]->{'Create Table'}
+		);
+	}
+
+	public function testShowCreateTableLimitsKeyLengths() {
+		$this->assertQuery(
+			'CREATE TABLE _tmp__table (
+					`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+					`order_id` bigint(20) unsigned DEFAULT NULL,
+					`meta_key` varchar(20) DEFAULT NULL,
+					`meta_value` text DEFAULT NULL,
+					`meta_data` mediumblob DEFAULT NULL,
+					PRIMARY KEY (`id`),
+					KEY `meta_key_value` (`meta_key`(20),`meta_value`(82)),
+					KEY `order_id_meta_key_meta_value` (`order_id`,`meta_key`(100),`meta_value`(82)),
+					KEY `order_id_meta_key_meta_data` (`order_id`,`meta_key`(100),`meta_data`(100))
+				);'
+		);
+
+		$this->assertQuery(
+			'SHOW CREATE TABLE _tmp__table;'
+		);
+		$results = $this->engine->get_query_results();
+		$this->assertEquals(
+			'CREATE TABLE `_tmp__table` (
+	`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+	`order_id` bigint(20) unsigned DEFAULT NULL,
+	`meta_key` varchar(20) DEFAULT NULL,
+	`meta_value` text DEFAULT NULL,
+	`meta_data` mediumblob DEFAULT NULL,
+	PRIMARY KEY (`id`),
+	KEY `order_id_meta_key_meta_data` (`order_id`, `meta_key`(20), `meta_data`(100)),
+	KEY `order_id_meta_key_meta_value` (`order_id`, `meta_key`(20), `meta_value`(100)),
+	KEY `meta_key_value` (`meta_key`(20), `meta_value`(100))
 );',
 			$results[0]->{'Create Table'}
 		);

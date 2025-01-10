@@ -3693,16 +3693,17 @@ class WP_SQLite_Translator {
 		$auto_increment_column = $this->get_autoincrement_column( $table_name );
 		$column_definitions    = array();
 		foreach ( $columns as $column ) {
+			$mysql_type   = $this->get_cached_mysql_data_type( $table_name, $column->name );
 			$is_auto_incr = $auto_increment_column && strtolower( $auto_increment_column ) === strtolower( $column->name );
 			$definition   = array();
 			$definition[] = '`' . $column->name . '`';
-			$definition[] = $this->get_cached_mysql_data_type( $table_name, $column->name ) ?? $column->name;
+			$definition[] = $mysql_type ?? $column->name;
 
 			if ( '1' === $column->notnull ) {
 				$definition[] = 'NOT NULL';
 			}
 
-			if ( null !== $column->dflt_value && '' !== $column->dflt_value && ! $is_auto_incr ) {
+			if ( $this->column_has_default( $column, $mysql_type ) && ! $is_auto_incr ) {
 				$definition[] = 'DEFAULT ' . $column->dflt_value;
 			}
 
@@ -3724,7 +3725,8 @@ class WP_SQLite_Translator {
 	 * @return array An array of key definitions
 	 */
 	private function get_key_definitions( $table_name, $columns ) {
-		$key_definitions = array();
+		$key_length_limit = 100;
+		$key_definitions  = array();
 
 		$pks = array();
 		foreach ( $columns as $column ) {
@@ -3755,7 +3757,25 @@ class WP_SQLite_Translator {
 			$key_definition[] = sprintf( '`%s`', $index_name );
 
 			$cols = array_map(
-				function ( $column ) {
+				function ( $column ) use ( $table_name, $key_length_limit ) {
+					$data_type   = strtolower( $this->get_cached_mysql_data_type( $table_name, $column['name'] ) );
+					$data_length = $key_length_limit;
+
+					// Extract the length from the data type. Make it lower if needed. Skip 'unsigned' parts and whitespace.
+					if ( 1 === preg_match( '/^(\w+)\s*\(\s*(\d+)\s*\)/', $data_type, $matches ) ) {
+						$data_type   = $matches[1]; // "varchar"
+						$data_length = min( $matches[2], $key_length_limit ); // "255"
+					}
+
+					// Set the data length to the varchar and text key lengths
+					// char, varchar, varbinary, tinyblob, tinytext, blob, text, mediumblob, mediumtext, longblob, longtext
+					if ( str_ends_with( $data_type, 'char' ) ||
+						str_ends_with( $data_type, 'text' ) ||
+						str_ends_with( $data_type, 'blob' ) ||
+						str_starts_with( $data_type, 'var' )
+					) {
+						return sprintf( '`%s`(%s)', $column['name'], $data_length );
+					}
 					return sprintf( '`%s`', $column['name'] );
 				},
 				$key['columns']
@@ -3856,6 +3876,33 @@ class WP_SQLite_Translator {
 			},
 			$this->get_table_columns( $table_name )
 		);
+	}
+
+	/**
+	 * Checks if column should define the default.
+	 *
+	 * @param stdClass $column The table column
+	 * @param string $mysql_type The MySQL data type
+	 *
+	 * @return boolean If column should have a default definition.
+	 */
+	private function column_has_default( $column, $mysql_type ) {
+		if ( null === $column->dflt_value ) {
+			return false;
+		}
+
+		if ( '' === $column->dflt_value ) {
+			return false;
+		}
+
+		if (
+			in_array( strtolower( $mysql_type ), array( 'datetime', 'date', 'time', 'timestamp', 'year' ), true ) &&
+			"''" === $column->dflt_value
+		) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**
