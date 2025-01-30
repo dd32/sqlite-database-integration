@@ -46,45 +46,48 @@ class WP_SQLite_PDO_User_Defined_Functions {
 	 * @var array
 	 */
 	private $functions = array(
-		'month'          => 'month',
-		'monthnum'       => 'month',
-		'year'           => 'year',
-		'day'            => 'day',
-		'hour'           => 'hour',
-		'minute'         => 'minute',
-		'second'         => 'second',
-		'week'           => 'week',
-		'weekday'        => 'weekday',
-		'dayofweek'      => 'dayofweek',
-		'dayofmonth'     => 'dayofmonth',
-		'unix_timestamp' => 'unix_timestamp',
-		'now'            => 'now',
-		'md5'            => 'md5',
-		'curdate'        => 'curdate',
-		'rand'           => 'rand',
-		'from_unixtime'  => 'from_unixtime',
-		'localtime'      => 'now',
-		'localtimestamp' => 'now',
-		'isnull'         => 'isnull',
-		'if'             => '_if',
-		'regexp'         => 'regexp',
-		'field'          => 'field',
-		'log'            => 'log',
-		'least'          => 'least',
-		'greatest'       => 'greatest',
-		'get_lock'       => 'get_lock',
-		'release_lock'   => 'release_lock',
-		'ucase'          => 'ucase',
-		'lcase'          => 'lcase',
-		'unhex'          => 'unhex',
-		'inet_ntoa'      => 'inet_ntoa',
-		'inet_aton'      => 'inet_aton',
-		'datediff'       => 'datediff',
-		'locate'         => 'locate',
-		'utc_date'       => 'utc_date',
-		'utc_time'       => 'utc_time',
-		'utc_timestamp'  => 'utc_timestamp',
-		'version'        => 'version',
+		'month'                        => 'month',
+		'monthnum'                     => 'month',
+		'year'                         => 'year',
+		'day'                          => 'day',
+		'hour'                         => 'hour',
+		'minute'                       => 'minute',
+		'second'                       => 'second',
+		'week'                         => 'week',
+		'weekday'                      => 'weekday',
+		'dayofweek'                    => 'dayofweek',
+		'dayofmonth'                   => 'dayofmonth',
+		'unix_timestamp'               => 'unix_timestamp',
+		'now'                          => 'now',
+		'md5'                          => 'md5',
+		'curdate'                      => 'curdate',
+		'rand'                         => 'rand',
+		'from_unixtime'                => 'from_unixtime',
+		'localtime'                    => 'now',
+		'localtimestamp'               => 'now',
+		'isnull'                       => 'isnull',
+		'if'                           => '_if',
+		'regexp'                       => 'regexp',
+		'field'                        => 'field',
+		'log'                          => 'log',
+		'least'                        => 'least',
+		'greatest'                     => 'greatest',
+		'get_lock'                     => 'get_lock',
+		'release_lock'                 => 'release_lock',
+		'ucase'                        => 'ucase',
+		'lcase'                        => 'lcase',
+		'unhex'                        => 'unhex',
+		'inet_ntoa'                    => 'inet_ntoa',
+		'inet_aton'                    => 'inet_aton',
+		'datediff'                     => 'datediff',
+		'locate'                       => 'locate',
+		'utc_date'                     => 'utc_date',
+		'utc_time'                     => 'utc_time',
+		'utc_timestamp'                => 'utc_timestamp',
+		'version'                      => 'version',
+
+		// Internal helper functions.
+		'_helper_like_to_glob_pattern' => '_helper_like_to_glob_pattern',
 	);
 
 	/**
@@ -758,5 +761,87 @@ class WP_SQLite_PDO_User_Defined_Functions {
 	 */
 	public function version() {
 		return '5.5';
+	}
+
+	/**
+	 * A helper to covert LIKE pattern to a GLOB pattern for "LIKE BINARY" support.
+
+	 * @TODO: Some of the MySQL string specifics described below are likely to
+	 *        affect also other patterns than just "LIKE BINARY". We should
+	 *        consider applying some of the conversions more broadly.
+	 *
+	 * @param string $pattern
+	 * @return string
+	 */
+	public function _helper_like_to_glob_pattern( $pattern ) {
+		if ( null === $pattern ) {
+			return null;
+		}
+
+		/*
+		 * 1. Normalize escaping of "%" and "_" characters.
+		 *
+		 * MySQL has unusual handling for "\%" and "\_" in all string literals.
+		 * While other sequences follow the C-style escaping ("\?" is "?", etc.),
+		 * "\%" resolves to "\%" and "\_" resolves to "\_" (unlike in C strings).
+		 *
+		 * This means that "\%" behaves like "\\%", and "\_" behaves like "\\_".
+		 * To preserve this behavior, we need to add a second backslash in cases
+		 * where only one is used. To do so correctly, we need to:
+		 *
+		 *  1. Skip all double backslash patterns (as "\\" resolves to "\").
+		 *  2. Add an extra backslash when "\%" or "\_" follows right after.
+		 *
+		 * This may be related to: https://bugs.mysql.com/bug.php?id=84118
+		 */
+		$pattern = preg_replace( '/(^|[^\\\\](?:\\\\{2}))*(\\\\[%_])/', '$1\\\\$2', $pattern );
+
+		/*
+		 * 2. Unescape C-style escape sequences.
+		 *
+		 * MySQL string literals are represented using C-style encoded strings,
+		 * but the GLOB pattern in SQLite doesn't support such escaping.
+		 */
+		$pattern = stripcslashes( $pattern );
+
+		/*
+		 * 3. Escape characters that have special meaning in GLOB patterns.
+		 *
+		 * We need to:
+		 *  1. Escape "]" as "[]]" to avoid interpreting "[...]" as a character class.
+		 *  2. Escape "*" as "[*]" (must be after 1 to avoid being escaped).
+		 *  3. Escape "?" as "[?]" (must be after 1 to avoid being escaped).
+		 */
+		$pattern = str_replace( ']', '[]]', $pattern );
+		$pattern = str_replace( '*', '[*]', $pattern );
+		$pattern = str_replace( '?', '[?]', $pattern );
+
+		/*
+		 * 4. Convert LIKE wildcards to GLOB wildcards ("%" -> "*", "_" -> "?").
+		 *
+		 * We need to convert them only when they don't follow any backslashes,
+		 * or when they follow an even number of backslashes (as "\\" is "\").
+		 */
+		$pattern = preg_replace( '/(^|[^\\\\](?:\\\\{2})*)%/', '$1*', $pattern );
+		$pattern = preg_replace( '/(^|[^\\\\](?:\\\\{2})*)_/', '$1?', $pattern );
+
+		/*
+		 * 5. Unescape LIKE escape sequences.
+		 *
+		 * While in MySQL LIKE patterns, a backslash is usually used to escape
+		 * special characters ("%", "_", and "\"), it works with all characters.
+		 *
+		 * That is:
+		 *   SELECT '\\x' prints '\x', but LIKE '\\x' is equivalent to LIKE 'x'.
+		 *
+		 * This is true also for multi-byte characters:
+		 *   SELECT '\\©' prints '\©', but LIKE '\\©' is equivalent to LIKE '©'.
+		 *
+		 * However, the multi-byte behavior is likely to depend on the charset.
+		 * For now, we'll assume UTF-8 and thus the "u" modifier for the regex.
+		 */
+		$pattern = preg_replace( '/\\\\(.)/u', '$1', $pattern );
+
+		return $pattern;
 	}
 }
